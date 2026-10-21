@@ -78,10 +78,11 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
           const p = o.points.map(id => points[id]).filter(Boolean).map(xy)
           if (p.length !== o.points.length) return null
           const selected = selection?.type === 'observation' && selection.id === o.id
-          const color = o.kind === 'gnss' ? '#7c68c6' : o.kind === 'angle' || o.kind === 'azimuth' ? '#8b9ac2' : '#328f9c'
+          const flagged = solution?.diagnostics?.flagged_observations.includes(o.id)
+          const color = flagged ? '#cb6474' : o.kind === 'gnss' ? '#7c68c6' : o.kind === 'angle' || o.kind === 'azimuth' ? '#8b9ac2' : '#328f9c'
           const a = p[0], b = p[p.length-1], mid = { x: (a.x+b.x)/2, y: (a.y+b.y)/2 }
           const path = p.map(q => `${q.x},${q.y}`).join(' ')
-          return <g key={o.id} data-object="observation" className="canvas-edge" opacity={o.enabled ? 1 : .3} role="button" aria-label={'选择观测 '+o.id} onClick={e => { e.stopPropagation(); onSelect({ type: 'observation', id: o.id }) }}>
+          return <g key={o.id} data-object="observation" className={'canvas-edge '+(flagged ? 'flagged-edge' : '')} opacity={o.enabled ? 1 : .3} role="button" aria-label={'选择观测 '+o.id} onClick={e => { e.stopPropagation(); onSelect({ type: 'observation', id: o.id }) }}>
             {p.length > 1 ? <><polyline points={path} fill="none" stroke="transparent" strokeWidth="14" /><polyline points={path} fill="none" stroke={selected ? '#4f46e5' : color} strokeWidth={selected ? 2.7 : 1.65} strokeDasharray={o.kind === 'angle' ? '5 4' : undefined} /></> : <circle cx={a.x} cy={a.y} r="22" fill="none" stroke={color} strokeDasharray="4 3" />}
             <text x={mid.x+ (p.length === 1 ? 28 : 0)} y={mid.y-9-(i % 2)*4} textAnchor="middle" className={'edge-label '+(selected ? 'selected' : '')} filter="url(#label-bg)">{o.id} · {o.kind === 'height' ? 'ΔH' : o.kind === 'gnss' ? 'ΔXYZ' : o.kind === 'distance' ? 'S' : names[o.kind]}</text>
           </g>
@@ -103,7 +104,7 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
             <circle r={selected ? 19 : 14} fill={selected ? '#e4e7ff' : '#fcfdff'} stroke={selected ? '#c7d2fe' : 'none'} />
             {fixed ? <path d="M0 -7 L7 6 L-7 6 Z" fill="#475569" stroke="#fff" strokeWidth="1.5" /> : <><circle r="6" fill="white" stroke={selected ? '#4f46e5' : '#328f9c'} strokeWidth="2.2" /><circle r="1.5" fill={selected ? '#4f46e5' : '#328f9c'} /></>}
             <text x="0" y="-23" textAnchor="middle" className="point-label">{id}</text>
-            {project.family === '水准网' && <text x="0" y="31" textAnchor="middle" className="point-value">H {p.H.toFixed(3)}</text>}
+            {project.family === '水准网' && <text x="0" y="31" textAnchor="middle" className="point-value">{solution && !solution.design ? 'Ĥ' : 'H'} {(solution?.points[id]?.H ?? p.H).toFixed(3)}</text>}
           </g>
         })}
         {!Object.keys(points).length && <text x="50%" y="50%" textAnchor="middle" className="canvas-placeholder">选择左侧 ＋ 工具，点击画布开始布点</text>}

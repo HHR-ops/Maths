@@ -8,7 +8,7 @@ Each observation block is independent of other blocks; a block may be correlated
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from copy import deepcopy
 import math
 import re
@@ -362,6 +362,7 @@ class NetworkSolution:
     matrices: dict
     point_precision: list
     relative_precision: list
+    iteration_trace: list = field(default_factory=list)
 
     def to_dict(self):
         return {"statistics":self.model.stats,"design":self.design,"method":self.method,"iterations":self.iterations,
@@ -369,7 +370,8 @@ class NetworkSolution:
                 "observation_order":self.model.labels,"angular_rows":self.model.angular.tolist(),
                 "corrections":self.corrections.tolist(),"result":self.result.to_dict(),
                 "matrices":{k:v.tolist() for k,v in self.matrices.items()},
-                "point_precision":self.point_precision,"relative_precision":self.relative_precision}
+                "point_precision":self.point_precision,"relative_precision":self.relative_precision,
+                "iteration_trace":self.iteration_trace}
 
 
 def adjust_network(net: Network, design=True, precision="prior", max_iterations=40):
@@ -382,11 +384,13 @@ def adjust_network(net: Network, design=True, precision="prior", max_iterations=
     if design and len(initial.d) and np.max(np.abs(initial.d))>1e-8:
         raise AdjustmentError("布网设计的近似坐标尚不满足精确限制。请调整点坐标或限制值；录入实测值后也可使用实测平差求解。")
     base=np.array([points[p][a] for p,a in initial.keys])
-    converged=False
+    converged=False; trace=[]
     for iteration in range(1,max_iterations+1):
         m=linearize(net,points,design,require_values=True)
         result=_step(m,net.method,precision)
         dx=result.x
+        trace.append({'iteration':iteration,'max_correction':float(np.max(np.abs(dx))) if dx.size else 0.,
+                      'weighted_sum_linearized':result.weighted_sum,'corrections':dx.tolist()})
         for (p,a),change in zip(m.keys,dx): points[p][a]+=float(change)
         if design or not dx.size or np.max(np.abs(dx))<1e-8:
             converged=True; break
@@ -409,6 +413,7 @@ def adjust_network(net: Network, design=True, precision="prior", max_iterations=
                      "Qxx · 参数协因数":result.qxx,"Q_L̂ · 观测平差值协因数":result.q_adjusted,"Qvv · 改正数协因数":result.qvv})
     if result.precision_sigma is not None: matrices["CovXX · 参数协方差"]=result.qxx*result.precision_sigma**2
     solution=NetworkSolution(final,initial,points,result,iteration,design,net.method,total,matrices,[],[])
+    solution.iteration_trace=trace
     _precision(net,solution)
     return solution
 

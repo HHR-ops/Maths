@@ -1,6 +1,6 @@
-# 测量平差工作台 v0.4 · React 桌面版
+# 测量平差工作台 v0.5 · React 桌面版
 
-从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.4.0) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.4-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
+从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.5.0) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.5-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
 此版本使用 React + TypeScript + Vite 重做界面，使用本机 WebView2 显示窗口，沿用 Python / NumPy 平差内核。
 运行环境为 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本，以及 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。环境齐全后可以离线使用。
 旧 Tk 界面源码保留供对照。Git 仓库存放源码与说明，EXE 和便携压缩包通过 Releases 分发。
@@ -8,6 +8,14 @@
 ![控制网工作台](docs/screenshots/workbench.png)
 
 跨电脑使用与项目迁移见 [便携版使用说明](docs/PORTABLE.md)。
+
+## v0.5 新增
+
+- **批量导入**：Excel / CSV / TSV、列映射、单位转换、GNSS 协方差、逐行错误预览，确认后一次性写入。
+- **分步计算**：观测与参数、线性化、定权、所选模型、法方程、迭代、精度传播；矩阵标签可定位画布对象，并支持四法对照。
+- **统计诊断**：先验尺度下的整体 χ² 检验、标准化残差与相关观测块检验，采用 Holm 校正；可停用疑似观测并比较复算前后结果。
+
+操作、统计假设与测试范围见 [v0.5 使用说明](docs/V05.md)。
 
 ## 界面与开源参考
 
@@ -109,9 +117,9 @@ Set-Location ..
 React 修改后执行 `npm run build`，重启桌面程序即可。浏览器联调使用 `python desktop.py --serve --port 8877`，再打开其输出的回环地址；浏览器模式不向桌面草稿目录写入数据。
 需要热更新时，先启动上述 8877 端口的 Python 服务，再在 frontend 中执行 `npm run dev`；Vite 会代理本地计算接口。生产桌面版始终使用已构建产物。
 
-- `python -m unittest -v test_adjustment test_network test_desktop`：计算内核、几何雅可比、GNSS 相关协方差、四法一致性、JSON/API 边界、矩阵提取、草稿持久化与会话访问校验。
+- `python -m unittest -v test_adjustment test_network test_desktop test_v05`：计算内核、几何雅可比、GNSS 相关协方差、四法一致性、JSON/API 边界、矩阵提取、草稿持久化与会话访问校验。
 - 在 frontend 执行 `npm run test:e2e`：实际 Edge 中验证画布交互、实时统计、七类网与四法、实测 GNSS、输入错误、结果失效、项目与导出、多个窗口尺寸。
-- `python desktop.py --self-test <输出JSON>`：七类实测网 × 四种方法及四个矩阵例题的打包后计算冒烟验证。
+- `python desktop.py --self-test <输出JSON>`：七类实测网 × 四种方法、四个矩阵例题、七类 Excel 模板和已知模拟粗差的打包后验证。
 - `python desktop.py --ui-self-test <输出JSON>`：实际 React 桌面窗口、Python 桥接、精度计算与原生文件导出冒烟验证；会短暂打开窗口后自动关闭。
 - `powershell -ExecutionPolicy Bypass -File build.ps1`：构建 React，运行 Python 测试，生成单文件 Windows EXE，复制说明与第三方许可。
 

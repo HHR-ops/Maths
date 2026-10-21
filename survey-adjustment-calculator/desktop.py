@@ -7,6 +7,7 @@ Native file exports always go through a user-chosen save dialog.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import mimetypes
 import os
@@ -21,6 +22,9 @@ import numpy as np
 
 from adjustment import AdjustmentError, MODEL_NAMES, FORMULAS, make_report, parse_matrix, solve
 from examples import EXAMPLES
+from bulk_import import read_tables, preview_import, template
+from calculation_steps import matrix_steps, network_steps
+from diagnostics import diagnose, diagnostic_report
 from network import (Network, FAMILIES, KINDS, ARCSEC, adjust_network,
                      automatic_matrices, example_network, linearize,
                      network_report, parse_constraints)
@@ -61,7 +65,9 @@ def _matrix_solution(payload):
     out['std_adjusted'] = result.std(result.q_adjusted)
     out['std_v'] = result.std(result.qvv)
     out['std_x'] = result.std(result.qxx)
-    out['report'] = make_report(result, str(data.get('title', '矩阵平差')))
+    out['steps'] = matrix_steps(model, values, result)
+    out['diagnostics'] = diagnose(result, sigma0=float(data.get('sigma0', 1)), alpha=payload.get('alpha', .05))
+    out['report'] = make_report(result, str(data.get('title', '矩阵平差')))+'\n\n'+diagnostic_report(out['diagnostics'])
     return out
 
 
@@ -70,6 +76,9 @@ def dispatch(op, payload):
         return {'families': FAMILIES, 'kinds': KINDS, 'methods': MODEL_NAMES,
                 'formulas': FORMULAS, 'examples': EXAMPLES,
                 'project': example_network('水准网').to_dict()}
+    if op == 'import_read': return read_tables(payload['filename'], payload['content_base64'])
+    if op == 'import_preview': return preview_import(payload['project'], payload['tables'], policy=payload.get('policy', 'append'), units=payload.get('units'))
+    if op == 'import_template': return template(payload.get('family', '水准网'), payload.get('kind', 'xlsx'))
     if op == 'example':
         return example_network(payload.get('family', '水准网'), bool(payload.get('measured'))).to_dict()
     if op == 'validate':
@@ -137,9 +146,26 @@ def dispatch(op, payload):
     if op == 'solve':
         sol = adjust_network(net, design=design, precision=payload.get('precision', 'prior'))
         out = sol.to_dict()
-        out['report'] = network_report(net, sol)
+        out['steps'] = network_steps(net, sol)
+        out['diagnostics'] = diagnose(sol.result, labels=sol.model.labels, groups=sol.model.groups,
+                                      angular=sol.model.angular, alpha=payload.get('alpha', .05), design=design)
+        out['report'] = network_report(net, sol)+'\n\n'+diagnostic_report(out['diagnostics'])
         out['std_adjusted'] = sol.result.std(sol.result.q_adjusted)
         return out
+    if op == 'compare_methods':
+        results = []
+        baseline = None
+        for method, name in MODEL_NAMES.items():
+            net.method = method
+            sol = adjust_network(net, design=design, precision=payload.get('precision', 'prior'))
+            if baseline is None: baseline = sol
+            results.append({'method': method, 'name': name, 'weighted_sum': sol.result.weighted_sum,
+                            'iterations': sol.iterations, 'max_coordinate_difference': float(np.max(np.abs(sol.corrections-baseline.corrections))) if sol.corrections.size else 0.,
+                            'max_residual_difference': float(np.max(np.abs(sol.result.v-baseline.result.v))) if sol.result.v.size else 0.,
+                            'max_cofactor_difference': float(np.max(np.abs(sol.result.qxx-baseline.result.qxx))) if sol.result.qxx.size else 0.,
+                            'n': sol.model.stats['n'], 't': sol.model.stats['t'], 'r': sol.model.stats['r']})
+        return {'results': results, 'baseline': MODEL_NAMES['condition'],
+                'note': '对同一观测模型、权和精确限制进行等价转换。比较坐标总改正数、残差和参数协因数；条件法的坐标通过自由参数恢复。无自由参数的附参模型按等价退化模型处理。'}
     raise AdjustmentError('未知操作。')
 
 
@@ -182,18 +208,22 @@ class Api:
         except Exception:
             return {'ok': False, 'error': '计算未完成，请检查输入数据和矩阵维数。'}
 
-    def save_file(self, content, filename):
+    def save_file(self, content, filename, encoding='text'):
         if not isinstance(content, str) or len(content.encode('utf-8')) > 32*1024*1024:
             return {'ok': False, 'error': '导出内容超过 32 MB。'}
         if not self._window: return {'ok': False, 'error': '桌面窗口尚未就绪。'}
         import webview
         filename = Path(str(filename)).name
-        if not filename.endswith(('.json', '.txt', '.csv')):
+        if not filename.endswith(('.json', '.txt', '.csv', '.xlsx')):
             return {'ok': False, 'error': '不支持的导出类型。'}
+        if encoding not in ('text', 'base64') or (filename.endswith('.xlsx') and encoding != 'base64'):
+            return {'ok': False, 'error': '不支持的文件编码。'}
         paths = self._window.create_file_dialog(webview.FileDialog.SAVE, save_filename=filename)
         if not paths: return {'ok': True, 'cancelled': True}
         try:
-            Path(paths if isinstance(paths, str) else paths[0]).write_text(content, encoding='utf-8-sig' if filename.endswith('.csv') else 'utf-8')
+            target = Path(paths if isinstance(paths, str) else paths[0])
+            if encoding == 'base64': target.write_bytes(base64.b64decode(content, validate=True))
+            else: target.write_text(content, encoding='utf-8-sig' if filename.endswith('.csv') else 'utf-8')
             return {'ok': True}
         except OSError as exc:
             return {'ok': False, 'error': f'无法保存文件：{exc}'}
@@ -273,6 +303,16 @@ def main():
                 checks[family+'/'+method] = result['ok']
         for model, data in EXAMPLES.items():
             checks[model] = api.rpc('matrix_solve', {'model': model, 'data': data})['ok']
+        for family in FAMILIES:
+            file = dispatch('import_template', {'family': family})
+            tables = dispatch('import_read', file)['tables']
+            preview = dispatch('import_preview', {'project': example_network(family).to_dict(), 'tables': tables, 'policy': 'replace'})
+            checks['xlsx/'+family] = preview['ok']
+        diagnostic_net = Network()
+        diagnostic_net.add_point('A', H=100, fixed=['H']); diagnostic_net.add_point('B', H=100)
+        for index in range(10): diagnostic_net.add_observation('height', ['A', 'B'], 1.010 if index == 9 else 1., sigma=.001)
+        diagnostic = dispatch('solve', {'project': diagnostic_net.to_dict(), 'design': False})
+        checks['diagnostics/known_blunder'] = diagnostic['diagnostics']['flagged_observations'] == ['O10']
         Path(args.self_test).write_text(_json({'ok': all(checks.values()), 'checks': checks}), encoding='utf-8')
         return
     server, url = start_server(api, args.port)
@@ -283,7 +323,7 @@ def main():
         else:
             import webview
             webview.settings['ALLOW_DOWNLOADS'] = False
-            api._window = webview.create_window('测量平差工作台 · React', url, js_api=api,
+            api._window = webview.create_window('测量平差工作台 v0.5 · React', url, js_api=api,
                                                width=1440, height=960, min_size=(1060, 740),
                                                background_color='#f8fafc')
             if args.ui_self_test:

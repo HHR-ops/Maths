@@ -4,8 +4,8 @@
 
 ## 测量平差工作台
 
-[项目源码与使用说明](survey-adjustment-calculator/README.md) · [Windows 便携版下载](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.4.0)
+[项目源码与使用说明](survey-adjustment-calculator/README.md) · [Windows 便携版下载](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.5.0)
 
-基于 React + TypeScript 的本地桌面工作台，支持七类控制网布设、四种平差方法、自动矩阵建模和精度评估。
+基于 React + TypeScript 的本地桌面工作台，支持七类控制网布设、四种平差方法、自动矩阵建模和精度评估。v0.5 新增 Excel / CSV 批量导入、分步计算、四法对照与统计诊断。
 
 ![控制网工作台](survey-adjustment-calculator/docs/screenshots/workbench.png)

@@ -3,7 +3,7 @@ declare global {
     __SURVEY_TOKEN__?: string
     __surveyDirty?: boolean
     __surveyWorkspace?: unknown
-    pywebview?: { api?: { save_file: (content: string, name: string) => Promise<{ ok: boolean; cancelled?: boolean; error?: string }> } }
+    pywebview?: { api?: { save_file: (content: string, name: string, encoding?: string) => Promise<{ ok: boolean; cancelled?: boolean; error?: string }> } }
   }
 }
 export async function rpc<T>(op: string, payload: unknown = {}): Promise<T> {
@@ -25,3 +25,15 @@ export async function saveFile(content: string, filename: string): Promise<boole
   return true
 }
 export const json = (value: unknown) => JSON.stringify(value, null, 2)
+export async function saveBinary(content: string, filename: string): Promise<boolean> {
+  if (window.pywebview?.api) {
+    const result = await window.pywebview.api.save_file(content, filename, 'base64')
+    if (!result.ok) throw new Error(result.error)
+    return !result.cancelled
+  }
+  const bytes = Uint8Array.from(atob(content), c => c.charCodeAt(0))
+  const url = URL.createObjectURL(new Blob([bytes]))
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  return true
+}

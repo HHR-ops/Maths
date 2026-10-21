@@ -43,7 +43,7 @@ for relative, info in lock['packages'].items():
     parts.append(f'## {relative.removeprefix("node_modules/")} {info["version"]}\n')
     for p in sorted(licenses): parts.append(p.read_text(encoding='utf-8', errors='replace')+'\n')
 
-for name in ('pywebview', 'pythonnet', 'clr_loader', 'proxy_tools', 'bottle', 'numpy', 'cffi', 'pycparser', 'typing_extensions', 'pyinstaller'):
+for name in ('pywebview', 'pythonnet', 'clr_loader', 'proxy_tools', 'bottle', 'numpy', 'scipy', 'openpyxl', 'et_xmlfile', 'defusedxml', 'cffi', 'pycparser', 'typing_extensions', 'pyinstaller'):
     dist = metadata.distribution(name)
     parts.append(f'## Python dependency: {name} {dist.version}\n')
     for file in dist.files or []:
