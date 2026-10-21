@@ -1,7 +1,7 @@
 # Windows 便携版使用与迁移
 
-1. 从 [测量平差工作台 v0.6.0 发布页](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.0) 下载 `SurveyAdjustment-v0.6.0-Windows-x64.zip`。
-2. 解压到本机文件夹，双击 `测量平差工作台-v0.6-React.exe`。
+1. 从 [测量平差工作台 v0.6.1 发布页](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.1) 下载 `SurveyAdjustment-v0.6.1-Windows-x64.zip`。
+2. 解压到本机文件夹，双击 `测量平差工作台-v0.6.1-React.exe`。
 3. 无需安装 Python、Node.js 或项目依赖。计算在本机完成，不需要联网。
 
 目标电脑需要 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本、Microsoft Edge WebView2 Runtime。WebView2 缺失时，可从 [微软官方下载页](https://developer.microsoft.com/microsoft-edge/webview2/) 安装；需要全离线部署时选择 x64 Evergreen Standalone Installer，并预先带到目标电脑上安装。
@@ -19,7 +19,7 @@
 发布页附带 `SHA256SUMS.txt`。可在 PowerShell 中计算压缩包校验值，与该文件中的同名条目比对：
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\SurveyAdjustment-v0.6.0-Windows-x64.zip
+Get-FileHash -Algorithm SHA256 -LiteralPath .\SurveyAdjustment-v0.6.1-Windows-x64.zip
 ```
 
 ## 当前验证范围

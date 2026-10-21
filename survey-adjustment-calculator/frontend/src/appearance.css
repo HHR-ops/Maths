@@ -1,0 +1,232 @@
+/* Desktop appearance: readable text, distinct controls, quiet scrollbars. */
+:root {
+  color-scheme: light;
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
+  --ink: #26354b;
+  --text-secondary: #475972;
+  --muted: #5f6f86;
+  --border: #d7dfe9;
+  --control-border: #b8c4d5;
+  --divider: #e1e7ef;
+  --success-text: #286f60;
+  --warning-text: #886021;
+  --purple-text: #66528f;
+  --scroll-thumb: #b2bdcd;
+  --scroll-thumb-hover: #8c9bb1;
+  scrollbar-gutter: stable;
+}
+
+/* Windows' CJK UI fonts come first, including text rendered inside the SVG. */
+button, input, textarea, select { font-family: inherit; }
+.mono, .point-value, .property-fields input {
+  font-family: "Cascadia Mono", Consolas, "Microsoft YaHei UI", monospace;
+}
+.point-label, .edge-label {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+.point-label { fill: var(--ink); font-weight: 700; }
+.point-value { fill: var(--muted); letter-spacing: 0; }
+.edge-label { fill: #54677d; font-size: 12px; font-weight: 500; }
+.edge-label.selected { fill: #4e46bb; }
+.flagged-edge .edge-label { fill: #a13f55; }
+.canvas-placeholder { fill: var(--muted); }
+
+/* Text hierarchy is shared by the network, matrix and theory workspaces. */
+.muted, .page-heading p, .nav-label, .brand small, .breadcrumb,
+.offline-pill, .sidebar-version, .sidebar-version button,
+.local-status small, .project-identity small,
+.stat-card>div, .stat-card small, .stat-card i,
+.canvas-actions, .canvas-heading .muted, .canvas-status,
+.canvas-compass, .canvas-legend, .canvas-zoom>span,
+.inspector-intro p, .field small, .inspector-tip,
+.property-title small, .property-list dt,
+.table-footnote, .page-footer, .modal-description, .modal-close,
+.result-summary small, .section-caption, .result-checks,
+.help-content, .about-content, .about-brand span, .startup p {
+  color: var(--muted);
+}
+.nav-item, .local-status, .breadcrumb strong, .field>span:first-child,
+.property-section-label, .checkbox-row label, .check-label,
+.property-list dd, .table-actions, .section-heading strong,
+.canvas-heading strong, .property-title strong,
+.help-content strong, .about-brand strong, .result-summary strong,
+.result-checks b, .matrix-fields textarea, .toast>span {
+  color: var(--text-secondary);
+}
+.nav-item { font-weight: 500; }
+.nav-item.active { color: #4942b8; background: #e9e9fb; }
+.nav-item:hover:not(.active) { background: #eaf0f7; color: var(--ink); }
+.eyebrow { color: #65748b; }
+.stat-card strong { color: #2e415b; }
+.stat-card:nth-child(3) strong { color: var(--success-text); }
+.stat-card i { background: #f2f5fa; border-color: var(--divider); }
+.project-identity small, .stat-card small, .canvas-heading .muted,
+.canvas-legend, .canvas-status, .inspector-tip, .model-status small {
+  font-size: 12px;
+}
+.field>span:first-child, .section-heading strong, .canvas-heading strong,
+.data-table th, .matrix-table th, .segmented button.active {
+  font-weight: 600;
+}
+
+/* Buttons and editable fields have a firmer outline than passive panels. */
+input, select, textarea { border-color: var(--control-border); }
+input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) {
+  border-color: #94a4bb;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #6862d0;
+  box-shadow: 0 0 0 3px #5453d718;
+}
+input:disabled, select:disabled, textarea:disabled {
+  color: #6c7b91;
+  background: #f1f4f8;
+  border-color: #d2dbe7;
+  opacity: 1;
+}
+.button { color: var(--text-secondary); }
+.button-outline { border-color: var(--control-border); box-shadow: none; }
+.button-outline:hover:not(:disabled) {
+  color: var(--ink);
+  background: #f2f5fa;
+  border-color: #92a2b9;
+}
+.button-primary { color: #fff; border-color: #4847c4; }
+.button-danger { color: #fff; }
+.button-ghost:hover:not(:disabled) { background: #edf1f7; color: var(--ink); }
+.button:disabled {
+  opacity: 1;
+  color: #78869b;
+  background: #f2f4f8;
+  border-color: #d7dfe9;
+  box-shadow: none;
+}
+.button-ghost:disabled { background: transparent; border-color: transparent; }
+.button.is-on, .canvas-tools .button-icon.active {
+  color: #4e46bb;
+  background: #e9e7fa;
+}
+.canvas-tools .button-icon, .canvas-zoom .button-icon { color: #5d6f87; }
+.canvas-tools { border-color: #cbd5e3; box-shadow: 0 2px 8px #26354b08; }
+.canvas-zoom { border-color: #cbd5e3; }
+.segmented { background: #edf1f6; border-color: #dce3ed; }
+.segmented button { color: var(--muted); }
+.segmented button.active { color: var(--ink); box-shadow: 0 1px 3px #26354b1a; }
+.panel, .canvas-panel, .stat-card { border-color: var(--border); }
+.canvas-heading, .canvas-status, .inspector-divider, .data-tabs,
+.data-table td, .data-table th { border-color: var(--divider); }
+.intro-icon { color: #71839c; border-color: #dbe2ed; }
+.inspector-formula { color: #5b6486; background: #f1f3f9; }
+.formula-card, .formula-card .mono, .step-formula { color: #625187; }
+.model-status, .model-status strong { color: var(--success-text); }
+.model-status small { color: #547768; }
+.model-status { border-color: #d5e6de; background: #f0f7f3; }
+.model-status.has-defect, .model-status.has-defect small { color: var(--warning-text); }
+.example-note { color: #496f5d; }
+.warning-note { color: var(--warning-text); }
+
+/* Tables keep row labels and numeric results equally legible. */
+.data-tabs>button:not(.button) { color: var(--muted); }
+.data-tabs>button.active:not(.button) { color: #4e46bb; }
+.data-table th, .matrix-table th {
+  color: #4a5e78;
+  background: #f4f7fb;
+}
+.data-table td, .matrix-table td { color: var(--text-secondary); }
+.data-table small { color: var(--muted); font-size: 12px; }
+.data-table td.mono, .matrix-table td { color: #344b68; }
+.data-table .strong { color: #344b68; font-weight: 600; }
+.data-table .button-icon { color: #60738c; }
+.data-table td .muted, .status-label, .disabled-label { font-size: 12px; }
+.status-label { color: var(--success-text); }
+.disabled-label { color: #68778c; }
+.count, .data-tabs .active .count, .matrix-dimension { color: #665b94; }
+.report-text { color: var(--text-secondary); }
+.empty, .empty p { color: var(--muted); }
+.empty strong { color: var(--text-secondary); }
+.data-table tbody tr:hover:not(.selected-row) { background: #f6f8fc; }
+.data-table tr.selected-row { background: #eeeffc; }
+.matrix-entity { color: #62508c; }
+.tag { font-weight: 500; }
+.tag-green, .import-result { color: var(--success-text); }
+.tag-purple { color: #66528f; }
+.import-error, .diagnostic-flag-count { color: #a13f55 !important; }
+.import-dropzone, .import-dropzone strong, .import-more,
+.import-table-tabs>button:not(.button), .import-table-tabs>button>span,
+.step-description, .step-metrics small, .step-footer,
+.diagnostic-intro p, .diagnostic-notes, .diagnostic-none,
+.recalculation-comparison>p { color: var(--muted); }
+.steps-navigation button, .step-heading strong, .step-metrics strong,
+.diagnostic-intro strong, .recalculation-comparison>strong {
+  color: var(--text-secondary);
+}
+.steps-navigation button, .import-table-tabs>button:not(.button) {
+  border-color: #cbd5e3;
+}
+.steps-navigation button.active, .import-table-tabs>button.active {
+  color: #4e46bb;
+  border-color: #bbb6e6;
+}
+.step-heading small { color: var(--muted); }
+.global-test strong, .global-test dd { color: var(--success-text); }
+.global-test small, .global-test p, .global-test dt { color: #567564; }
+.global-warning strong, .global-warning dd { color: var(--warning-text); }
+.global-warning small, .global-warning p, .global-warning dt { color: #806b45; }
+
+/* The theory reader uses the same contrast levels as the calculation pages. */
+.theory-search { border-color: var(--control-border); color: var(--muted); }
+.theory-search input::placeholder { color: var(--muted); opacity: 1; }
+.theory-toc-heading, .theory-chapter h3>span, .theory-chapter>button small,
+.search-count, .theory-search-empty, .theory-context>small, .theory-context p,
+.theory-context dt, .theory-breadcrumb, .theory-article-header>p,
+.theory-tags span, .theory-section-heading small, .lab-metrics span,
+.lab-metrics strong small, .lab-legend, .lab-notes, .lab-scope,
+.theory-quiz>small, .theory-quiz button>span, .theory-related>h3,
+.theory-sources>h3, .theory-sources>p, .theory-sources a,
+.theory-sources a small, .theory-pagination>span {
+  color: var(--muted);
+}
+.theory-chapter>button, .theory-section>p, .theory-table td,
+.lab-metrics strong, .propagation-terms>div, .propagation-terms b,
+.theory-quiz button { color: var(--text-secondary); }
+.theory-section>p { font-size: 14px; }
+.theory-chapter>button small, .theory-tags span, .theory-sources>p,
+.theory-sources a small, .lab-metrics span, .lab-legend, .lab-scope {
+  font-size: 11px;
+}
+.theory-chapter>button.active { color: #4942b8; }
+.theory-chapter>button.active small { color: #665b94; }
+.theory-table th { color: #4a5e78; font-weight: 600; }
+.theory-example>small, .theory-example>p { color: #3e6e61; }
+.theory-callout, .theory-quiz>p, .theory-glossary dd { color: #685780; }
+.theory-formula { color: #334464; border-color: #dce3ed; }
+.theory-quiz button { border-color: #cbd5e3; }
+.lab-plot text { fill: var(--muted); }
+.precision-note { color: #796093; }
+
+/*
+ * The viewport and nested panels share a light scrollbar. Use standards where
+ * available, with a WebView2-specific fallback for rounded thumbs and no arrows.
+ */
+* { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) #f5f7fb; }
+@supports selector(::-webkit-scrollbar) {
+  *, .sidebar-content, .theory-toc, .modal, .data-scroll, .data-tabs, .report-text { scrollbar-width: auto; scrollbar-color: auto; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #f5f7fb; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border: 2px solid #f5f7fb;
+    border-radius: 8px;
+    min-height: 36px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+  ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  ::-webkit-scrollbar-corner { background: #f5f7fb; }
+}
+@media (forced-colors: active) {
+  *, .sidebar-content, .theory-toc, .modal { scrollbar-color: auto; scrollbar-width: auto; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: Canvas; }
+  ::-webkit-scrollbar-thumb { background: ButtonText; border-color: Canvas; }
+}

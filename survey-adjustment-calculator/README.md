@@ -1,6 +1,6 @@
-# 测量平差工作台 v0.6 · React 桌面版
+# 测量平差工作台 v0.6.1 · React 桌面版
 
-从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.0) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
+从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.1) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6.1-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
 此版本使用 React + TypeScript + Vite 重做界面，使用本机 WebView2 显示窗口，沿用 Python / NumPy 平差内核。
 运行环境为 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本，以及 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。环境齐全后可以离线使用。
 旧 Tk 界面源码保留供对照。Git 仓库存放源码与说明，EXE 和便携压缩包通过 Releases 分发。
@@ -8,6 +8,10 @@
 ![控制网工作台](docs/screenshots/workbench.png)
 
 跨电脑使用与项目迁移见 [便携版使用说明](docs/PORTABLE.md)。
+
+## v0.6.1 外观细节
+
+加深辅助文字与数据标注，优先使用 Windows 中文界面字体，统一按钮和输入框轮廓，并改用浅色圆角滚动条。已检查 150% 桌面缩放和不同窗口宽度。
 
 ## v0.6 新增
 
