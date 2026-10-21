@@ -1,0 +1,156 @@
+{
+  "chapters": [
+    {"id":"errors","title":"误差基础","subtitle":"从误差来源到偶然误差的统计规律","articles":["sources","random"]},
+    {"id":"propagation","title":"误差传播","subtitle":"把观测精度传递到计算成果","articles":["propagation","applications"]},
+    {"id":"least-squares","title":"最小二乘平差","subtitle":"函数模型、权与四种平差方法","articles":["least-squares","models","rank"]},
+    {"id":"testing","title":"统计与模型检验","subtitle":"理解检验的前提、结论与边界","articles":["hypotheses","diagnostics"]},
+    {"id":"quality","title":"精度与质量分析","subtitle":"成果有多精确，异常能否被发现","articles":["precision","quality"]},
+    {"id":"ellipses","title":"误差椭圆","subtitle":"由协方差看方向精度与联合置信域","articles":["ellipse","confidence"]}
+  ],
+  "sources": [
+    {"id":"osu","title":"Ohio State · Adjustment Computations (2021)","url":"https://earthsciences.osu.edu/sites/default/files/2021-02/OSU_Adjustment_Notes_Part_1.pdf","note":"平差模型、协因数和统计分析的延伸阅读；本模块为自行编写的学习说明与例题。"},
+    {"id":"nist-types","title":"NIST TN 1297 · 不确定度分量的识别","url":"https://www.nist.gov/pml/nist-technical-note-1297/nist-tn-1297-appendix-d2-identification-uncertainty-components","note":"区分误差性质与 A 类、B 类不确定度评定方法。"},
+    {"id":"nist-normal","title":"NIST · Normal Distribution","url":"https://www.itl.nist.gov/div898/handbook/eda/section3/eda3661.htm","note":"正态分布密度、分布范围及其统计用途。"},
+    {"id":"nist-propagation","title":"NIST · Combining uncertainty components","url":"https://pml.nist.gov/cuu/Uncertainty/combination.html","note":"灵敏度系数、协方差交叉项和一阶传播。"},
+    {"id":"nist-confidence","title":"NIST · Confidence Limits for the Mean","url":"https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm","note":"t 区间与置信水平的重复抽样含义。"},
+    {"id":"nist-chi","title":"NIST · Chi-Square Critical Values","url":"https://www.itl.nist.gov/div898/handbook/eda/section3/eda3674.htm","note":"χ² 双侧检验的上下临界值。"},
+    {"id":"r-holm","title":"R stats · Adjust P-values for Multiple Comparisons","url":"https://stat.ethz.ch/R-manual/R-devel/library/stats/html/p.adjust.html","note":"Holm 校正及检验族错误率控制。"},
+    {"id":"scipy-f","title":"SciPy · F 分布分位数 fdtri","url":"https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtri.html","note":"后验尺度置信椭圆例题使用本地 SciPy 分位数计算。"}
+  ],
+  "symbols": [
+    ["L, L̂","观测向量、平差观测向量"],["v = L̂ − L","改正数；与未知真误差不同"],["X₀, x, X̂","近似参数、参数改正数、最终参数"],["A, B, C","条件、参数、精确限制的系数矩阵"],["w, l, d","按页面方程定义的常数项，注意正负号"],["Q, P = Q⁻¹","观测协因数阵、权阵"],["Σ = σ₀²Q","协方差阵；含绝对精度尺度"],["n, t, r = n − t","标量观测数、必要观测数、多余观测数"],["u, c, f","未知参数数、独立限制数、残差自由度 f = r"],["σ₀, σ̂₀","先验与后验单位权标准差"],["α, β, p","显著性水平、第二类错误概率、p 值"],["a, b, θ","椭圆长半轴、短半轴、长轴方位角"]
+  ],
+  "articles": [
+    {
+      "id":"sources","chapter":"errors","title":"误差从哪里来，怎样分类？","summary":"把误差来源、误差性质与不确定度评定方法分开理解。","minutes":5,"tags":["系统误差","偶然误差","粗差","准确度","精密度"],
+      "sections":[
+        {"title":"观测值、真误差与改正数","paragraphs":["在给定定义和参考条件下，观测值与真值之差称为真误差；真值通常未知，所以一次观测的真误差通常也不可知。平差根据模型和多余观测求得改正数 v；v 能检查观测之间的相容性，却不是对真误差的直接测量。","本程序统一采用 v = 平差值 − 观测值。若把真误差定义为观测值 − 真值，那么理想改正数与真误差方向相反；实际平差值仍有误差，不能简单写成 v 等于负真误差。"],"formulas":["\\Delta=L-L_{\\rm true},\\qquad v=\\widehat L-L"]},
+        {"title":"从来源寻找可采取的措施","table":{"headers":["来源","测量例子","改进方向"],"rows":[["仪器与装置","尺长常数、视准轴偏差、天线相位中心","检校、标定、仪器改正与合理观测程序"],["环境与传播路径","温度、气压、折光、多路径效应","记录环境量、改正模型、选择时段与测站"],["人员与操作","照准、整平、对中、读数或录入","规范操作、独立复核、双向或重复观测"],["方法与数学模型","投影归算遗漏、基准不一致、错误约束","统一坐标框架、单位与归算，检查模型假设"]]}},
+        {"title":"按性质分类","paragraphs":["系统误差在给定条件下呈固定或可描述的规律，如未改正的尺长偏差。优先标定或建立改正模型；重复同样的观测不会自动消除它。","偶然误差在重复观测间变化，用随机变量和协方差描述其统计特性。零均值是经过必要改正后建立的模型假设，不是任何观测序列天然具备的性质。","粗差常来自点号弄错、读数或录入错误、操作失误等。大残差只提示需要核查：也可能来自定权不合理、模型遗漏或多个异常相互影响。"],"callout":"A 类与 B 类描述不确定度的评定途径，不能分别等同于偶然误差与系统误差。已作系统改正后，改正量本身仍可能具有不确定度。"},
+        {"title":"精密度与准确度","paragraphs":["精密度关注重复结果的离散程度；准确度还涉及偏差及参考真值的一致性。多次结果聚得很紧，仍可能整体偏离参考值。中误差是测量教材中常用的标准差表达；无偏条件下，均方误差等于方差，有偏时还要加上偏差平方。"],"formulas":["\\operatorname{MSE}(\\widehat X)=\\operatorname{Var}(\\widehat X)+\\operatorname{Bias}(\\widehat X)^2"],"example":{"title":"共同偏差不会被平均掉","text":"若每次测距都带 +5 mm 的共同偏差，同时有独立的 2 mm 随机标准差，重复 16 次后随机均值标准差是 0.5 mm，但 +5 mm 的偏差仍存在。若共同项本身是标准差 5 mm 的随机分量，则均值标准差为 √(25 + 4/16) ≈ 5.025 mm。两种表述的统计含义不同。"}}
+      ],
+      "quiz":{"question":"16 次重复测距的结果十分集中，就一定没有系统偏差吗？","options":["一定没有，平均已经消除全部误差","不能确定，共同偏差可能保留","只要残差小于 3σ 就能确定"],"answer":1,"explanation":"离散程度描述精密度；共同偏差不会仅因重复观测而消失。"},
+      "sources":["nist-types","osu"],"related":["random","precision"]
+    },
+    {
+      "id":"random","chapter":"errors","title":"偶然误差的统计规律","summary":"从随机变量、正态分布到重复观测均值的精度。","minutes":6,"tags":["正态分布","随机误差","均值","方差","相关性"],"lab":"normal",
+      "sections":[
+        {"title":"经典规律及其适用条件","paragraphs":["教材常用“小误差多、大误差少，正负误差机会相近，平均趋近零”概括偶然误差。它们对应对称、集中、零均值等随机模型特征；有限的一组样本可能不对称，平均也未必恰好为零。","当许多小影响在合适条件下叠加时，正态模型常可作为近似。不能从“随机”直接推断“正态”，更不能把中心极限定理理解为原始观测必然正态。样本独立性、稳定性和尾部特征需要结合测量条件检查。"]},
+        {"title":"正态模型和 1σ、2σ、3σ","formulas":["\\Delta\\sim N(\\mu,\\sigma^2),\\qquad z=\\frac{\\Delta-\\mu}{\\sigma}","\\phi(z)=\\frac{1}{\\sqrt{2\\pi}}e^{-z^2/2}"],"paragraphs":["在正态假设下，μ ± σ、μ ± 2σ、μ ± 3σ 的总体覆盖率约为 68.27%、95.45%、99.73%。分布在整个实数轴上都有尾部；3σ 不是绝对误差上限。下面的图可以改变 k，查看区间概率。"]},
+        {"title":"总体量与样本估计","formulas":["\\bar L=\\frac1n\\sum_iL_i,\\qquad s^2=\\frac{\\sum_i(L_i-\\bar L)^2}{n-1}","\\operatorname{Var}(\\bar L)=\\frac{1}{n^2}\\sum_i\\sum_j\\operatorname{Cov}(L_i,L_j)"],"paragraphs":["对独立同分布、方差有限的重复观测，s² 是总体方差的无偏估计；n ≥ 2，分母 n−1 来自均值估计占用的自由度。若真值已知，按真误差平方估计方差的情形需要另行区分。","只有在各次互不相关且具有相同标准差 σ 时，均值标准差才简化为 σ/√n。不相关仅表示协方差为零，一般不推出独立；联合正态是两者等价的一个重要特例。"],"example":{"title":"重复观测的共同分量","text":"设每次误差 = 共同随机项 b + 独立随机项 εᵢ，且两者不相关。均值方差为 σ_b² + σ_ε²/n；独立部分随 n 减小，共同项形成精度下限。"}}
+      ],
+      "quiz":{"question":"在正态误差模型下，超过 3σ 的观测是否绝不可能出现？","options":["不可能","仍有非零概率，应结合记录和模型核查","出现一次就证明全部定权错误"],"answer":1,"explanation":"正态分布的尾部无限延伸。3σ 覆盖率约 99.73%，并非 100%。"},
+      "sources":["nist-normal","nist-confidence"],"related":["propagation","hypotheses"]
+    },
+    {
+      "id":"propagation","chapter":"propagation","title":"误差传播定律与相关项","summary":"协方差传播不仅要平方相加，还要保留相关项。","minutes":6,"tags":["雅可比","协方差","误差传播定律","高差"],"lab":"propagation",
+      "sections":[
+        {"title":"先建立输出对输入的关系","paragraphs":["设输出向量 y = f(x)。在输入估值处求雅可比 J，把小扰动写成 δy ≈ Jδx，再求协方差。线性函数的公式精确成立；非线性函数通常是一阶近似，要求输入不确定度相对曲率足够小。","当误差较大、接近几何奇异位置或函数有强非线性时，一阶结果可能失真，可用高阶展开或基于合适概率模型的蒙特卡洛传播作进一步评估。"],"formulas":["J_{ij}=\\frac{\\partial f_i}{\\partial x_j},\\qquad\\Sigma_y\\approx J\\Sigma_xJ^{\\mathsf T}"]},
+        {"title":"标量展开与量纲","formulas":["\\sigma_y^2\\approx\\sum_i a_i^2\\sigma_i^2+2\\sum_{i<j}a_i a_j\\sigma_{ij},\\quad a_i=\\frac{\\partial f}{\\partial x_i}","\\sigma_{ij}=\\rho_{ij}\\sigma_i\\sigma_j,\\quad -1\\leq\\rho_{ij}\\leq1"],"paragraphs":["若输入互不相关，交叉项为零，才能使用平方相加的简化式。协方差的单位是两个输入单位的乘积，灵敏度系数的单位必须使输出方差量纲正确。","相关性是否可忽略应由共同测站、共用基准、观测处理过程等判断。GNSS 三维基线中各分量可能相关，因此应使用完整 3×3 协方差阵；本程序不同观测块之间目前按不相关处理。"]},
+        {"title":"测量例子：已知点高程加高差","formulas":["H_B=H_A+\\Delta h,\\qquad\\sigma_{H_B}^2=\\sigma_{H_A}^2+\\sigma_{\\Delta h}^2+2\\operatorname{Cov}(H_A,\\Delta h)"],"example":{"title":"3 mm 与 4 mm 怎样合成？","text":"互不相关时，输出标准差为 5 mm。若相关系数为 +0.5，和的标准差为 √37 ≈ 6.083 mm；同样两个输入求差时为 √13 ≈ 3.606 mm。下面改变相关系数和加减号，观察交叉项。"},"callout":"若将已知点作为精确固定点，计算模型相当于其方差为零；若其坐标也有不确定度，应作为随机观测或纳入联合协方差，不能在结果中凭空恢复。"}
+      ],
+      "quiz":{"question":"两个输入正相关时，它们的和与差的方差分别怎样变化？","options":["两者都增大","两者都减小","和增大、差减小，相对于不相关情形"],"answer":2,"explanation":"和的交叉项为 +2Cov，差的交叉项为 −2Cov。"},
+      "sources":["nist-propagation"],"related":["applications","precision"]
+    },
+    {
+      "id":"applications","chapter":"propagation","title":"传播定律在测量处理中的应用","summary":"从加权平均、距离与方位角，到相邻点的相对精度。","minutes":7,"tags":["加权平均","距离","方位角","相对精度","弧度"],"lab":"weighted-mean",
+      "sections":[
+        {"title":"独立观测的加权平均","formulas":["\\widehat L=\\frac{\\sum_i p_iL_i}{\\sum_i p_i},\\quad p_i=\\frac{1}{\\sigma_i^2},\\quad\\sigma_{\\widehat L}^2=\\frac{1}{\\sum_i p_i}"],"paragraphs":["这组写法把先验绝对方差直接用于定权，等价于 σ₀ = 1 的归一化约定。对同一个量，标准差减半意味着权增为四倍。若观测相关，需用完整协方差的广义最小二乘，不能继续直接套独立观测公式。"],"formulas2":[],"example":{"title":"三次观测的完整小算例","text":"观测 10、12、9 mm，先验标准差 1、2、1 mm。权为 1、0.25、1，估值 9.777778 mm；v 为 −0.222222、−2.222222、0.777778 mm。vᵀPv = 1.888889，r = 2，先验均值标准差 0.666667 mm。下方可自行改数复核。"}},
+        {"title":"由距离与方位角计算坐标增量","formulas":["\\begin{bmatrix}\\Delta X\\\\\\Delta Y\\end{bmatrix}=\\begin{bmatrix}s\\cos\\alpha\\\\s\\sin\\alpha\\end{bmatrix},\\quad J=\\begin{bmatrix}\\cos\\alpha&-s\\sin\\alpha\\\\\\sin\\alpha&s\\cos\\alpha\\end{bmatrix}"],"paragraphs":["平面约定为 X 北、Y 东，α 从北向东转。雅可比对角度的导数要求 α 及其标准差用弧度；角秒标准差先除以约 206264.806247，再代入。距离与角度有相关性时仍需交叉项。"],"example":{"title":"角秒误用会放大多少？","text":"s = 100 m、α = 0°、σ_s = 2 mm、σ_α = 2″，两者不相关。一阶 σ_ΔX = 2 mm，σ_ΔY = 100 × 2/206264.806247 m ≈ 0.970 mm。不能把数值 2 直接作为弧度标准差。"}},
+        {"title":"由两点成果评定相对精度","formulas":["\\Sigma_{P_j-P_i}=\\Sigma_{P_j}+\\Sigma_{P_i}-\\Sigma_{P_iP_j}-\\Sigma_{P_jP_i}"],"paragraphs":["平差点之间通常相关。两点坐标差、边长或方位角的精度，必须从联合协方差传播；把两个点位中误差直接平方相加可能明显失真。工作台“相对精度”使用相应坐标交叉协方差，再对目标量传播。","距离函数 s = √(ΔX²+ΔY²) 的坐标差梯度为 (ΔX/s, ΔY/s)。零距离处方向未定义，不能用这一梯度评定方向或距离的一阶精度。"]}
+      ],
+      "quiz":{"question":"在 s·sinα 的传播计算中，角度标准差 2″ 应怎样代入？","options":["直接代入 2","先换算成弧度，约 9.6963×10⁻⁶","先换算成 2 度"],"answer":1,"explanation":"三角函数对角度的标准导数对应弧度。"},
+      "sources":["nist-propagation"],"related":["least-squares","precision"]
+    },
+    {
+      "id":"least-squares","chapter":"least-squares","title":"最小二乘原理与法方程","summary":"把不相容的观测协调到函数模型上，同时考虑精度差异。","minutes":7,"tags":["最小二乘","函数模型","随机模型","法方程","BLUE"],
+      "sections":[
+        {"title":"函数模型和随机模型缺一不可","paragraphs":["函数模型描述观测与参数的几何或物理关系；随机模型描述观测误差的均值及协方差。对非线性关系 f(X)，在近似值 X₀ 处线性化，令 l = L − f(X₀)、B = ∂f/∂X，得到 v = Bx − l。最终参数为 X̂ = X₀ + x。","给定正定权阵 P，最小二乘在满足模型的改正数中最小化 vᵀPv。高权观测偏离同样数值时，代价更高。相关观测通过完整权阵耦合，不能把 P 的非对角项随意删去。"],"formulas":["\\Sigma_L=\\sigma_0^2Q,\\quad P=Q^{-1},\\qquad\\min_x(Bx-l)^{\\mathsf T}P(Bx-l)"]},
+        {"title":"从目标函数到法方程","formulas":["B^{\\mathsf T}P(Bx-l)=0,\\quad N=B^{\\mathsf T}PB,\\quad b=B^{\\mathsf T}Pl","Nx=b,\\quad Q_{xx}=N^{-1}\\quad\\text{(full column rank)}"],"paragraphs":["将目标函数对 x 求导并令梯度为零，得到法方程。N 是法方程系数阵，b 是法方程常数向量；N 可逆需要 B 在所用参数空间满列秩。实际数值求解应通过分解求解线性方程，公式中的逆矩阵主要用于表达理论关系。","本程序通过白化、SVD 与限制零空间处理来检查秩和计算成果；不是依靠无条件直接求逆来掩盖基准亏损。非线性网需更新近似坐标并迭代，收敛后仍应核查线性化和模型是否合理。"]},
+        {"title":"最优性到底依赖什么？","paragraphs":["在线性模型正确、误差零均值且协方差模型正确、参数可估的条件下，广义最小二乘是最佳线性无偏估计（BLUE）；“最佳”指在线性无偏估计类中协方差意义下的最优，不表示每次样本都最接近真值。","高斯—马尔可夫结论不要求误差正态。若进一步采用正态误差模型，最小二乘还能与极大似然联系起来，χ²、t、F 等精确分布推断也才有相应前提。"],"callout":"缩放全部权不会改变点估计，但会改变协因数和单位权尺度的数值。解释绝对标准差时，必须把 Q 与 σ₀² 成对使用。"}
+      ],
+      "quiz":{"question":"高斯—马尔可夫的 BLUE 结论是否必须假设误差正态？","options":["必须","不必须，但零均值、协方差模型和可估性等条件仍需成立","不需要任何随机模型"],"answer":1,"explanation":"正态性是许多精确统计检验的额外条件，不是 BLUE 结论的必要条件。"},
+      "sources":["osu"],"related":["models","rank","precision"]
+    },
+    {
+      "id":"models","chapter":"least-squares","title":"四种平差模型与统一符号","summary":"对照程序中的方程、输入矩阵与求解过程。","minutes":8,"tags":["条件平差","附有参数的条件平差","间接平差","附有限制条件的间接平差"],
+      "sections":[
+        {"title":"条件平差","formulas":["Av+w=0,\\quad M=AQA^{\\mathsf T},\\quad k=-M^{-1}w,\\quad v=QA^{\\mathsf T}k"],"paragraphs":["先写出平差观测值必须满足的独立条件；w 是用原始观测代入后得到的闭合差。A 为条件对观测的系数。这里按本程序的拉格朗日乘数符号取 k；其他教材可能把 k 定义成相反号，应以最终 v 和条件闭合为准。","在 A 满行秩时，残差自由度等于独立条件数。多列条件的线性相关不会增加多余观测信息。"]},
+        {"title":"附有参数的条件平差","formulas":["Av+Bx+w=0,\\qquad\\begin{bmatrix}AQA^{\\mathsf T}&B\\\\B^{\\mathsf T}&0\\end{bmatrix}\\begin{bmatrix}k\\\\x\\end{bmatrix}=\\begin{bmatrix}-w\\\\0\\end{bmatrix},\\quad v=QA^{\\mathsf T}k"],"paragraphs":["条件式中还保留一部分待估参数。若 A 有独立的 m 行、参数系数 B 有独立的 u 列，并满足可估条件，则残差自由度为 m−u；一般情形需要根据有效秩确定，不能机械地只数输入行列。"]},
+        {"title":"间接平差","formulas":["v=Bx-l,\\quad N=B^{\\mathsf T}PB,\\quad Nx=B^{\\mathsf T}Pl"],"paragraphs":["以观测方程联结参数和观测。无额外精确限制且 B 满列秩时，必要观测数 t = u，多余观测数 r = n−u。x 可以是参数本身，也可以是相对于 X₀ 的改正数；本程序录入 X₀ 时按后者解释。"]},
+        {"title":"附有限制条件的间接平差","formulas":["v=Bx-l,\\quad Cx+d=0","\\begin{bmatrix}N&C^{\\mathsf T}\\\\C&0\\end{bmatrix}\\begin{bmatrix}x\\\\\\lambda\\end{bmatrix}=\\begin{bmatrix}B^{\\mathsf T}Pl\\\\-d\\end{bmatrix}"],"paragraphs":["C 与 d 施加精确的参数关系。例如约束最终高程 H₁+H₂ = K，若 x 是改正数，必须将近似值的和移入 d。随机的已知量应作为带权观测处理，不应误当零方差精确限制。","设 Z 为 C 的零空间基，先找满足限制的特解 x_p，再写 x = x_p + Zz，实际需要观测确定的是 z。本程序据白化后的 BZ 计算必要观测数与基准亏损。"],"callout":"四种模型在描述同一个可估问题、使用相同观测权与相同精确限制时应给出一致成果。切换公式不会自动修正错误模型；“四法对照”用于数值交叉核查。"}
+      ],
+      "quiz":{"question":"对最终坐标施加精确限制，而 x 表示坐标改正数时，应如何处理？","options":["把最终坐标常数直接当作 d","把 X₀ 代入并移项，形成 Cx + d = 0","忽略 X₀"],"answer":1,"explanation":"限制必须与参数定义一致，近似值不能遗漏。"},
+      "sources":["osu"],"related":["least-squares","rank"]
+    },
+    {
+      "id":"rank","chapter":"least-squares","title":"n、t、r、参数数与基准亏损","summary":"先判断模型是否可估，再解释自由度与精度。","minutes":5,"tags":["秩","基准亏损","必要观测数","多余观测数","约束"],
+      "sections":[
+        {"title":"观测条数不等于标量观测数","paragraphs":["本程序 n 按参与计算的标量观测分量计数。一条三维 GNSS 基线通常贡献 ΔX、ΔY、ΔZ 三个标量；二维坐标观测贡献两个。停用观测不参与 n，相关性由协方差阵表达，不会把三个分量变成一个标量。"]},
+        {"title":"独立限制后的有效参数空间","formulas":["t=\\operatorname{rank}(P^{1/2}BZ),\\quad r=n-t,\\quad\\delta=u-c-t"],"paragraphs":["u 是未被精确固定的坐标分量数；c 是独立限制条件的秩；Z 张成限制零空间；t 为观测对自由参数提供的独立信息数。P¹ᐟ² 表示用于白化的权平方根。","只有 δ = 0 时全部自由参数才可由当前模型唯一确定。常见亏损来自平移、旋转、尺度或孤立点。重复添加同方向观测可能增加 n 和 r，却不能补足缺失的基准方向。"],"example":{"title":"只测三角形三条边","text":"二维三个自由点有 u = 6 个坐标分量，三条独立边长只确定形状，t 通常为 3，存在两个平移与一个旋转自由度。固定一个点的 XY 并提供一个独立方向基准后，才能讨论相应坐标成果的唯一性。"},"callout":"r = 0 时仍可能恰定求解，但不能由残差估计后验单位权方差，也不能进行这里的整体残差 χ² 检验。设计模式使用先验精度，几何预测值不是实测值。"}
+      ],
+      "quiz":{"question":"一条完整的 GNSS 三维基线通常给总观测数 n 增加多少？","options":["1","2","3"],"answer":2,"explanation":"n 统计标量分量；协方差阵表达三个分量之间的相关性。"},
+      "sources":["osu"],"related":["models","diagnostics"]
+    },
+    {
+      "id":"hypotheses","chapter":"testing","title":"统计假设检验的基本语言","summary":"H₀、显著性、p 值、功效与置信区间各自表示什么。","minutes":6,"tags":["原假设","显著性水平","p值","t检验","F检验","置信区间"],
+      "sections":[
+        {"title":"先定假设，再看统计量","paragraphs":["H₀ 表示需要检验的模型假设，H₁ 为备择假设。根据 H₀ 下统计量的分布构造拒绝域，预先选择显著性水平 α。第一类错误是在 H₀ 为真时拒绝它；第二类错误是在某个具体备择成立时未拒绝 H₀，其概率记为 β，功效为 1−β。","p 值是在 H₀ 和检验定义成立的前提下，出现当前或更不相容统计量的尾部概率。它不是“H₀ 为真的概率”，也不是异常量的大小。未拒绝只表示现有证据不足；低冗余、弱几何和低功效可能隐藏问题。"]},
+        {"title":"χ²、t 与 F 的分工","table":{"headers":["分布 / 检验","典型用途","关键前提与本程序范围"],"rows":[["χ²","已知先验尺度下的残差整体检验、观测块检验","正态模型、正确协方差及有效自由度；诊断页已提供"],["标准正态 z","已知先验尺度的残差分量检验","使用残差协因数，不把同组后验尺度当已知；诊断页已提供"],["t","未知方差时的单参数或均值区间","正态、独立尺度估计等条件；这里讲原理，不替换诊断页的 z 检验"],["F","独立方差比、嵌套模型比较、多参数置信域","须确认相应独立性、秩与模型关系；椭圆例题提供后验 F 倍率"]]}},
+        {"title":"置信区间与重复抽样","formulas":["\\bar L\\pm t_{1-\\alpha/2,n-1}\\frac{s}{\\sqrt n}"],"paragraphs":["对独立同分布正态重复观测、未知方差，上式给出均值的 t 置信区间。95% 置信水平描述按同样程序重复抽样构造的区间长期覆盖真参数的比例；在频率学解释下，不能把某个已算出的固定区间说成真参数有 95% 概率落在其中。","模型选择和反复试验会影响推断。若看完许多检验再挑最显著的一个，必须考虑多重比较；若删去可疑观测后重算，应保留前后结果并重新核查模型。"]}
+      ],
+      "quiz":{"question":"p = 0.02 是否等于“原假设只有 2% 概率为真”？","options":["是","不是，它是原假设下按检验定义计算的尾部概率","等于粗差为真的概率"],"answer":1,"explanation":"p 值以 H₀ 为计算前提，不是对 H₀ 赋予的后验概率。"},
+      "sources":["nist-confidence","nist-chi","r-holm"],"related":["diagnostics","confidence"]
+    },
+    {
+      "id":"diagnostics","chapter":"testing","title":"整体模型检验与局部异常诊断","summary":"把工作台的 χ²、分量、观测块和 Holm 结果读清楚。","minutes":8,"tags":["模型检验","卡方","χ²","Holm","残差","粗差诊断"],"lab":"global-test",
+      "sections":[
+        {"title":"整体 χ² 检验：已知先验尺度","formulas":["H_0:\\ \\varepsilon\\sim N(0,\\sigma_0^2Q),\\quad T=\\frac{v^{\\mathsf T}Pv}{\\sigma_0^2}\\sim\\chi_f^2,\\quad f=r","\\chi_f^2(\\alpha/2)\\leq T\\leq\\chi_f^2(1-\\alpha/2)"],"paragraphs":["在线性正态、模型正确及先验协方差作为已知量的假设下，T 按残差自由度服从 χ²。非线性网在正确线性化附近通常采用近似推断。程序默认双侧 α = 0.05，使用两端临界值；偏大与偏小都应结合先验标准差和模型判断。","统计量偏大可能来自粗差、遗漏的系统项、错误限制或过小的先验标准差；偏小可能来自保守定权，也可能只是随机波动。一次检验不能独自确定原因。"],"callout":"同一组残差得到 σ̂₀² = vᵀPv/r 后，再用这个 σ̂₀ 充当已知先验分母，T 就恒等于 r。诊断页因此坚持使用先验 σ₀，而不是页面当前选择的后验精度尺度。"},
+        {"title":"分量检验与观测块检验","formulas":["z_i=\\frac{v_i}{\\sigma_0\\sqrt{q_{v_iv_i}}},\\qquad T_g=\\frac{v_g^{\\mathsf T}Q_{v_gv_g}^{+}v_g}{\\sigma_0^2}"],"paragraphs":["分量检验使用残差自身的协因数 q_vᵢvᵢ，不是原观测 q_ii。在已知先验尺度的正态假设下，单个可检验 z_i 的边缘分布为标准正态；不同残差通常相关。残差方差为零时，该分量不能按此方式检验。","对 GNSS、坐标等多分量观测，块检验使用完整残差协因数子块及其有效秩。上标 + 表示在有效子空间的广义逆，χ² 自由度为子块秩。不能把相关分量的 z² 直接相加，假装得到独立 χ²。"]},
+        {"title":"Holm 校正与人工复核","paragraphs":["将同一检验族的 m 个原始 p 值从小到大排序，依次与 α/(m−j+1) 比较，遇到首次未拒绝即停止拒绝后续项。Holm 控制该检验族至少一次误拒绝的概率，可用于相关检验。","程序对“标量分量”和“观测块”分别建立检验族并校正；这不等于把两个族合并后的全部决策也保证同一 α。疑似异常仅作标记，用户核查原始记录后可停用整条观测并复算，查看成果、冗余和精度变化。","程序未提供自动粗差剔除、完整数据探测可靠性指标或通用嵌套模型 F 检验；这里的知识介绍也不应被理解成这些功能已经实现。"]}
+      ],
+      "quiz":{"question":"整体 χ² 检验的先验 σ₀ 可以直接换成同组残差算出的 σ̂₀ 吗？","options":["可以，两者只是符号不同","不可以，这会使统计量恒等于自由度","仅当残差较小时可以"],"answer":1,"explanation":"vᵀPv / σ̂₀² = r，失去原有已知先验尺度检验的意义。"},
+      "sources":["nist-chi","r-holm"],"related":["hypotheses","quality"]
+    },
+    {
+      "id":"precision","chapter":"quality","title":"协因数、协方差与平差成果精度","summary":"分清几何定权的相对信息和绝对误差尺度。","minutes":7,"tags":["中误差","协因数","协方差","后验","点位精度"],
+      "sections":[
+        {"title":"从 Q 到 Σ","formulas":["\\Sigma_{\\widehat X}=\\sigma_s^2Q_{xx},\\qquad m_{X_i}=\\sigma_s\\sqrt{q_{x_ix_i}}","\\widehat\\sigma_0^2=\\frac{v^{\\mathsf T}Pv}{r}\\quad(r>0)"],"paragraphs":["协因数阵 Q 描述相对定权和网形的作用；乘上所选尺度 σ_s² 后得到协方差。先验评定采用 σ₀，后验评定采用 σ̂₀。σ̂₀ 是总体尺度的估计，不是每个观测都有相同标准差的意思。","若 r = 0，后验尺度不可由残差估计；若设计模式未输入实测值，只能按先验精度做预测。后验值很小也不能据此宣称成果准确：共同偏差、精确固定点的不确定度和错误模型可能不在残差中显现。"]},
+        {"title":"间接平差的三组精度","formulas":["Q_{\\widehat L}=BQ_{xx}B^{\\mathsf T},\\qquad Q_{vv}=Q-Q_{\\widehat L}"],"paragraphs":["以上公式用于无额外限制且满秩的线性间接模型；有精确限制时，应使用限制后的参数协因数。工作台按实际模型计算参数、平差观测和改正数的协因数。","观测值精度、平差值精度、改正数精度是不同对象。较小的残差标准差可能意味着该观测缺少独立检核能力，不能直接解释成原观测更精确。"]},
+        {"title":"点位、空间与相对精度","formulas":["m_p=\\sqrt{m_X^2+m_Y^2},\\qquad m_{3D}=\\sqrt{m_X^2+m_Y^2+m_Z^2}"],"paragraphs":["m_p 是 XY 误差向量平方长度期望的平方根（零均值时），是常用平面点位中误差；m_3D 类似地汇总三维分量。它们不是某个方向的标准差，也不是固定覆盖率置信半径。","方向相关的精度要看完整协方差和误差椭圆；相邻点关系要保留交叉协方差。GNSS 的 XYZ 结果处于输入坐标框架内，XY 椭圆不能未经坐标旋转就称作当地水平 ENU 椭圆。"]}
+      ],
+      "quiz":{"question":"协因数 Qxx 已知时，是否已经得到绝对参数标准差？","options":["已经得到","还需要所选 σ₀ 或 σ̂₀ 的尺度","只需要把所有元素取平方根"],"answer":1,"explanation":"协方差为 σ_s²Qxx，标准差取其对角元素的平方根。"},
+      "sources":["osu","nist-propagation"],"related":["ellipse","quality"]
+    },
+    {
+      "id":"quality","chapter":"quality","title":"成果质量：精度、可靠性与模型检查","summary":"数值解、统计相容与外部正确性需要分别核查。","minutes":5,"tags":["质量分析","可靠性","残差","冗余贡献","数值检查"],
+      "sections":[
+        {"title":"先检查计算与模型闭合","paragraphs":["检查方程残差、精确限制闭合、迭代收敛和参数秩，再核对观测单位、坐标框架、点号与固定分量。条件闭合只说明成果满足所建模型；模型本身写错时，也可能得到漂亮的闭合。","对同一问题可用工作台“四法对照”核查成果、残差和协因数的一致性；这是一种计算交叉检查，不能代替独立外部检核。"]},
+        {"title":"精度不等于可靠性","paragraphs":["精度描述随机误差对成果的不确定性；可靠性关注异常能否被发现以及未发现异常对成果的影响。网形强、标准差小，并不自动意味着每一条观测都有足够检核。","对互不相关的标量观测，可用 q_vᵢvᵢ/q_ii 表示该分量的冗余贡献，介于 0 与 1，合计为 r；值接近零表示异常可能难以在该残差中显现。相关观测时，逐分量比值不再具备同样可加解释，应结合白化、观测块和完整协方差分析。"],"formulas":["r_i=\\frac{q_{v_iv_i}}{q_{ii}}\\quad\\text{(uncorrelated observations)},\\qquad\\sum_i r_i=r"],"callout":"当前诊断页的 variance_ratio 是残差与原观测方差之比。对相关分量，不应把它当作独立观测冗余数直接求和。完整的最小可探测偏差、内外可靠性指标属于进一步分析。"},
+        {"title":"建议的复核顺序","table":{"headers":["检查","查看位置","能说明什么"],"rows":[["数据、单位、基准、限制","观测表、属性、限制编辑器","排查输入与函数模型问题"],["秩、n/t/r、迭代与方程误差","统计卡、计算步骤、报告","评估可估性与数值一致性"],["先验尺度与全局 / 局部检验","粗差诊断","在所述概率假设下评估相容性"],["点、相对精度与椭圆","精度评估、画布","评估随机误差对成果的影响"],["独立已知点、重复或异源成果","现场记录与外部核验","检验模型之外的共同偏差与实际适用性"]]},"paragraphs":["停用观测会改变网形、秩、自由度和参数精度。保留停用前后报告，核查是否引入新的基准亏损；不要以“删到检验通过”为目标。"]}
+      ],
+      "quiz":{"question":"某观测的残差接近零，能否断言它没有粗差？","options":["能","不能，可能缺少冗余或异常被吸收到参数中","只要全局检验通过就能"],"answer":1,"explanation":"异常可被参数和相关残差分担；残差小不等于有充分检核能力。"},
+      "sources":["osu","r-holm"],"related":["diagnostics","precision"]
+    },
+    {
+      "id":"ellipse","chapter":"ellipses","title":"误差椭圆的几何意义与计算","summary":"用两个半轴和方向表达二维协方差。","minutes":6,"tags":["误差椭圆","特征值","特征向量","方位角","GNSS"],"lab":"ellipse",
+      "sections":[
+        {"title":"协方差矩阵决定椭圆形状","formulas":["\\Sigma_{XY}=\\begin{bmatrix}\\sigma_X^2&\\rho\\sigma_X\\sigma_Y\\\\\\rho\\sigma_X\\sigma_Y&\\sigma_Y^2\\end{bmatrix},\\qquad e^{\\mathsf T}\\Sigma_{XY}^{-1}e=1","a=\\sqrt{\\lambda_{\\max}},\\quad b=\\sqrt{\\lambda_{\\min}}"],"paragraphs":["对称正定的二维协方差阵具有两个正特征值，其平方根是标准误差椭圆的长、短半轴；对应特征向量给出主轴方向。非零协方差通常让主轴偏离坐标轴。","协方差退化时椭圆可退化成线段或点，应单独处理；本例题限定非退化输入。σX = σY 且相关系数为零时为圆，长轴方位角不唯一。"]},
+        {"title":"主轴方向与坐标约定","formulas":["\\theta=\\operatorname{atan2}(u_Y,u_X)\\pmod{\\pi}"],"paragraphs":["u 是最大特征值对应的特征向量。程序平面 X 向北、Y 向东；方位角从 +X 转向 +Y，按 180° 周期报告。u 与 −u 表示同一条轴，不能因为特征向量换号就认为方向改变了 180°。","主工作台使用所选先验或后验尺度的 1σ 半轴，画布按可见比例放大。控制网点位不同、缩放不同，不应通过截图像素反推实际毫米精度；实际数值以精度表为准。"],"example":{"title":"一个可手算的椭圆","text":"Σ = [[4, 1.5], [1.5, 4]] mm²，特征值为 5.5 和 2.5 mm²。长半轴约 2.345208 mm，短半轴约 1.581139 mm，长轴由 +X 转向 +Y 为 45°。"}},
+        {"title":"三维网的投影不是当地水平椭圆","paragraphs":["GNSS 输入为同一 XYZ 直角坐标框架中的基线。XY 子阵产生该坐标平面的投影椭圆；当地水平 ENU 椭圆需要先用正确的坐标旋转 J 对完整三维协方差传播，再取 E、N 子阵。程序目前不自动进行 ENU、地心或投影坐标转换。"]}
+      ],
+      "quiz":{"question":"圆形误差椭圆的长轴方位角应怎样理解？","options":["必定是 0°","方向不唯一，应说明圆形退化的方向含义","必定是 90°"],"answer":1,"explanation":"两个特征值相等时任意正交轴都可作为主轴。"},
+      "sources":["osu","scipy-f"],"related":["confidence","precision"]
+    },
+    {
+      "id":"confidence","chapter":"ellipses","title":"标准椭圆与置信椭圆","summary":"二维 1σ 椭圆的联合覆盖率并不是 68%。","minutes":7,"tags":["置信椭圆","39.35%","95%","卡方","F分布"],"lab":"ellipse",
+      "sections":[
+        {"title":"已知协方差：二维正态联合区域","formulas":["e^{\\mathsf T}\\Sigma^{-1}e\\sim\\chi_2^2,\\quad P(e^{\\mathsf T}\\Sigma^{-1}e\\leq1)=1-e^{-1/2}\\approx39.35\\%","k_p=\\sqrt{\\chi_2^2(p)},\\qquad a_p=k_pa,\\quad b_p=k_pb"],"paragraphs":["在协方差已知的二维正态模型下，标准椭圆由马氏距离平方等于 1 定义，其内部联合概率约 39.35%。一维 ±σ 的 68.27% 不能直接挪到二维椭圆。","95% 联合置信椭圆的半轴倍率为 √5.991465 ≈ 2.447747，99% 约为 3.034854。把两个分量分别取 ±1.96σ 得到的是矩形边界，也不是同一个二维 95% 椭圆。"]},
+        {"title":"后验估计尺度：使用 F 倍率","formulas":["\\frac{e^{\\mathsf T}Q_{xx,2}^{-1}e}{2\\widehat\\sigma_0^2}\\sim F_{2,f},\\qquad k_p=\\sqrt{2F_{2,f}(p)}"],"paragraphs":["在线性正态模型、协因数确定、后验尺度估计与参数估计独立的条件下，若标准半轴已用 σ̂₀ 缩放，应采用上式 F 倍率，并提供估计尺度的自由度 f。小自由度时置信椭圆可能明显更大。","后验标准椭圆的覆盖率不是固定 39.35%；在这些假设下为 P(F₂,ᶠ ≤ 1/2)，随 f 改变。不能只看到“1σ”标签就给出与尺度来源无关的覆盖率。"],"example":{"title":"同为 95%，两种倍率不同","text":"协方差已知时倍率约 2.447747；若尺度由独立的 f = 10 自由度估计，倍率 √[2F₂,₁₀(0.95)] 约 2.864549。下面切换精度基准与自由度，查看具体变化。"}},
+        {"title":"读图时同时说明四件事","paragraphs":["报告椭圆时应说明：坐标平面与单位、半轴还是全轴、使用先验还是后验尺度、标准椭圆还是给定覆盖率的置信椭圆。工作台画布当前是 1σ 半轴；本页例题可以显示 95% 或 99% 置信椭圆，例题设置不会改变项目。","在频率学解释下，置信域描述重复观测后构造区域的长期覆盖率。非线性、模型误差、未计入的基准误差会影响实际覆盖，不能仅靠几何放大获得保证。"]}
+      ],
+      "quiz":{"question":"已知协方差的二维正态模型中，1σ 标准椭圆内部联合概率约为多少？","options":["68.27%","95%","39.35%"],"answer":2,"explanation":"二维马氏距离平方服从 χ²₂，P(χ²₂ ≤ 1) = 1 − exp(−1/2)。"},
+      "sources":["osu","scipy-f","nist-confidence"],"related":["ellipse","hypotheses"]
+    }
+  ]
+}

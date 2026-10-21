@@ -38,7 +38,18 @@ def run_check(window, output):
             if window.evaluate_js("document.querySelectorAll('.steps-navigation button').length === 7"): break
             time.sleep(.1)
         result['calculation_steps'] = window.evaluate_js("document.querySelectorAll('.steps-navigation button').length === 7")
-        result['ok'] = result['native_bridge'] and result['no_horizontal_overflow'] and result['precision_rows'] == 4 and result['native_export'] and result['native_xlsx_roundtrip'] and result['calculation_steps']
+        window.evaluate_js("Array.from(document.querySelectorAll('button')).find(b=>b.title==='理论与知识').click()")
+        for _ in range(100):
+            if window.evaluate_js("document.querySelectorAll('.theory-chapter>button').length === 13"): break
+            time.sleep(.1)
+        result['offline_theory'] = window.evaluate_js("document.querySelectorAll('.theory-chapter>button').length === 13 && document.querySelectorAll('.katex-error').length === 0")
+        window.evaluate_js("Array.from(document.querySelectorAll('.theory-chapter>button')).find(b=>b.textContent.startsWith('标准椭圆与置信椭圆')).click()")
+        for _ in range(100):
+            if window.evaluate_js("document.querySelector('[data-metric=\"半轴倍率 k\"]')?.textContent.includes('2.447747') || false"): break
+            time.sleep(.1)
+        result['theory_experiment'] = window.evaluate_js("document.querySelector('[data-metric=\"半轴倍率 k\"]')?.textContent.includes('2.447747') || false")
+        result['theory_layout'] = window.evaluate_js('document.documentElement.scrollWidth <= innerWidth')
+        result['ok'] = result['native_bridge'] and result['no_horizontal_overflow'] and result['precision_rows'] == 4 and result['native_export'] and result['native_xlsx_roundtrip'] and result['calculation_steps'] and result['offline_theory'] and result['theory_experiment'] and result['theory_layout']
     except Exception as exc:
         result.update(ok=False, error=repr(exc))
     finally:

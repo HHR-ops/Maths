@@ -25,6 +25,7 @@ from examples import EXAMPLES
 from bulk_import import read_tables, preview_import, template
 from calculation_steps import matrix_steps, network_steps
 from diagnostics import diagnose, diagnostic_report
+from theory import experiment
 from network import (Network, FAMILIES, KINDS, ARCSEC, adjust_network,
                      automatic_matrices, example_network, linearize,
                      network_report, parse_constraints)
@@ -72,6 +73,7 @@ def _matrix_solution(payload):
 
 
 def dispatch(op, payload):
+    if op == 'theory_experiment': return experiment(payload.get('kind'), payload.get('inputs', {}))
     if op == 'bootstrap':
         return {'families': FAMILIES, 'kinds': KINDS, 'methods': MODEL_NAMES,
                 'formulas': FORMULAS, 'examples': EXAMPLES,
@@ -313,6 +315,8 @@ def main():
         for index in range(10): diagnostic_net.add_observation('height', ['A', 'B'], 1.010 if index == 9 else 1., sigma=.001)
         diagnostic = dispatch('solve', {'project': diagnostic_net.to_dict(), 'design': False})
         checks['diagnostics/known_blunder'] = diagnostic['diagnostics']['flagged_observations'] == ['O10']
+        for kind in ('normal', 'propagation', 'ellipse', 'global-test', 'weighted-mean'):
+            checks['theory/'+kind] = api.rpc('theory_experiment', {'kind': kind})['ok']
         Path(args.self_test).write_text(_json({'ok': all(checks.values()), 'checks': checks}), encoding='utf-8')
         return
     server, url = start_server(api, args.port)
@@ -323,7 +327,7 @@ def main():
         else:
             import webview
             webview.settings['ALLOW_DOWNLOADS'] = False
-            api._window = webview.create_window('测量平差工作台 v0.5 · React', url, js_api=api,
+            api._window = webview.create_window('测量平差工作台 v0.6 · React', url, js_api=api,
                                                width=1440, height=960, min_size=(1060, 740),
                                                background_color='#f8fafc')
             if args.ui_self_test:
