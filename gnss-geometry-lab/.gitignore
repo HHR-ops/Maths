@@ -1,0 +1,16 @@
+.venv/
+.tmp/
+.build-cache/
+__pycache__/
+build/
+dist/
+qa/
+*.spec
+frontend/node_modules/
+frontend/web-dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/*.tsbuildinfo
+.env
+.env.*
+!.env.example
