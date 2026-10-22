@@ -22,8 +22,9 @@ class DesktopBoundaryTests(unittest.TestCase):
         response = self.api.rpc('solve', {'project': project, 'design': False, 'precision': 'posterior'})
         self.assertTrue(response['ok'], response)
         out = json.loads(json.dumps(response, allow_nan=False))['data']
-        self.assertEqual(out['statistics']['n'], 15)
-        self.assertGreater(out['result']['qxx'][0][1], 0)
+        self.assertEqual(out['statistics']['n'], 27)
+        bx, by = out['parameter_order'].index('B.X'), out['parameter_order'].index('B.Y')
+        self.assertGreater(out['result']['qxx'][bx][by], 0)
         self.assertTrue(all('m3D' in p for p in out['point_precision']))
         np.testing.assert_allclose(np.asarray(out['matrices']['N = Bᵀ P B']),
                                    np.asarray(out['matrices']['B · 观测方程系数']).T @ np.asarray(out['matrices']['P · 权阵']) @ np.asarray(out['matrices']['B · 观测方程系数']))
@@ -35,7 +36,7 @@ class DesktopBoundaryTests(unittest.TestCase):
         b = self.api.rpc('analyze', {'project': second})
         c = self.api.rpc('analyze', {'project': first})
         self.assertEqual(a, c)
-        self.assertEqual(b['data']['statistics']['parameters'], 9)
+        self.assertEqual(b['data']['statistics']['parameters'], 18)
 
     def test_empty_design_remains_editable(self):
         project = example_network().to_dict()
@@ -87,7 +88,7 @@ class DesktopBoundaryTests(unittest.TestCase):
         incomplete = example_network().to_dict()
         self.assertFalse(self.api.rpc('extract', {'project': incomplete, 'design': False})['ok'])
         preview = self.api.rpc('analyze', {'project': incomplete, 'design': False})['data']
-        self.assertEqual(len(preview['missing_observations']), 5)
+        self.assertEqual(len(preview['missing_observations']), 6)
         self.assertNotIn('l · 常数项', preview['matrices'])
 
     def test_draft_persistence_is_atomic_and_rejects_older_updates(self):

@@ -1,6 +1,6 @@
-# 测量平差工作台 v0.6.2 · React 桌面版
+# 测量平差工作台 v0.6.3 · React 桌面版
 
-从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.2) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6.2-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
+从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.3) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6.3-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
 此版本使用 React + TypeScript + Vite 重做界面，使用本机 WebView2 显示窗口，沿用 Python / NumPy 平差内核。
 运行环境为 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本，以及 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。环境齐全后可以离线使用。
 旧 Tk 界面源码保留供对照。Git 仓库存放源码与说明，EXE 和便携压缩包通过 Releases 分发。
@@ -8,6 +8,12 @@
 ![控制网工作台](docs/screenshots/workbench.png)
 
 跨电脑使用与项目迁移见 [便携版使用说明](docs/PORTABLE.md)。
+
+## v0.6.3 典型控制网示例
+
+七类网采用不同的代表性布局、观测组合和基准条件，切换时同步重建画布及 n/t/r、参数个数、限制个数。未修改的示例可直接切换；有编辑时保留替换确认。实测示例与 Excel/CSV 模板也同步更新。
+
+每类示例的网形、统计和限制条件见 [典型示例说明](docs/NETWORK_EXAMPLES.md)。
 
 ## v0.6.2 表述细节
 
@@ -133,7 +139,7 @@ Set-Location ..
 React 修改后执行 `npm run build`，重启桌面程序即可。浏览器联调使用 `python desktop.py --serve --port 8877`，再打开其输出的回环地址；浏览器模式不向桌面草稿目录写入数据。
 需要热更新时，先启动上述 8877 端口的 Python 服务，再在 frontend 中执行 `npm run dev`；Vite 会代理本地计算接口。生产桌面版始终使用已构建产物。
 
-- `python -m unittest -v test_adjustment test_network test_desktop test_v05 test_theory`：计算内核、几何雅可比、GNSS 相关协方差、四法一致性、JSON/API 边界、矩阵提取、草稿持久化与会话访问校验。
+- `python -m unittest -v test_adjustment test_network test_desktop test_v05 test_theory test_network_examples`：计算内核、几何雅可比、GNSS 相关协方差、四法一致性、JSON/API 边界、矩阵提取、草稿持久化与会话访问校验。
 - 在 frontend 执行 `npm run test:e2e`：实际 Edge 中验证画布交互、实时统计、七类网与四法、实测 GNSS、输入错误、结果失效、项目与导出、多个窗口尺寸。
 - `python desktop.py --self-test <输出JSON>`：七类实测网 × 四种方法、四个矩阵例题、七类 Excel 模板和已知模拟粗差的打包后验证。
 - `python desktop.py --ui-self-test <输出JSON>`：实际 React 桌面窗口、Python 桥接、精度计算与原生文件导出冒烟验证；会短暂打开窗口后自动关闭。

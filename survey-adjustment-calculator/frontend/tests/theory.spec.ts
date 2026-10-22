@@ -3,7 +3,7 @@ import knowledge from '../src/knowledge.json' with { type: 'json' }
 
 async function ready(page: Page) {
   await page.goto('/')
-  await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await expect(page.getByTestId('stat-n')).toHaveText('6')
   await page.getByRole('button', { name: '理论与知识', exact: true }).click()
   await expect(page.locator('.theory-article h2')).toHaveText(knowledge.articles[0].title)
 }
@@ -104,13 +104,13 @@ test('ellipse confidence and model test experiments distinguish prior and poster
 })
 
 test('context links retain network and matrix calculations while reading theory', async ({ page }) => {
-  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6')
   await page.getByRole('button', { name: '计算精度', exact: true }).click()
   await expect(page.locator('.solution-summary')).toContainText('设计精度已计算')
   const precision = await page.locator('.data-panel tbody').innerText()
   await page.getByRole('button', { name: '相关理论', exact: true }).click()
   await expect(page.locator('.theory-article h2')).toContainText('协因数')
-  await expect(page.locator('.theory-context')).toContainText('5 / 3 / 2')
+  await expect(page.locator('.theory-context')).toContainText('6 / 3 / 3')
   await expect(page.locator('.heading-actions')).not.toContainText('计算精度')
   await page.locator('.heading-actions').getByRole('button', { name: '返回计算工作台' }).click()
   expect(await page.locator('.data-panel tbody').innerText()).toBe(precision)

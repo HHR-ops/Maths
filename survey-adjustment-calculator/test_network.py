@@ -77,17 +77,20 @@ class NetworkCases(unittest.TestCase):
         self.assertEqual(s.model.stats["n"],6)
 
     def test_level_rank_and_fix_counts(self):
-        net=example_network();net.points["A"]["fixed"]=[]
-        m=linearize(net);self.assertEqual(m.stats["defect"],1);self.assertEqual(m.stats["parameters"],4)
+        net=example_network()
+        for p in net.points.values():p["fixed"]=[]
+        m=linearize(net);self.assertEqual(m.stats["defect"],1);self.assertEqual(m.stats["parameters"],5)
         with self.assertRaisesRegex(AdjustmentError,"基准"):adjust_network(net)
         net.points["A"]["fixed"]=["H"]
+        net.points["E"]["fixed"]=["H"]
         m=linearize(net);self.assertEqual(m.stats["defect"],0);self.assertEqual(m.stats["parameters"],3)
         net.observations[-1]["enabled"]=False
-        self.assertEqual(linearize(net).stats["n"],4)
+        self.assertEqual(linearize(net).stats["n"],5)
 
     def test_distance_free_network_has_three_datum_defects(self):
         net=example_network("测边网")
         for p in net.points.values():p["fixed"]=[]
+        net.constraints=[]
         self.assertEqual(linearize(net).stats["defect"],3)
 
     def test_constraints_and_fixed_values(self):
@@ -113,7 +116,7 @@ class NetworkCases(unittest.TestCase):
         net=example_network()
         for p in net.points.values():p["fixed"]=["H"]
         s=adjust_network(net)
-        self.assertEqual(s.model.stats["t"],0);self.assertEqual(s.model.stats["r"],5)
+        self.assertEqual(s.model.stats["t"],0);self.assertEqual(s.model.stats["r"],6)
         assert_allclose(s.result.q_adjusted,0)
 
     def test_empty_and_one_point_counts(self):

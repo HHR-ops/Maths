@@ -26,7 +26,7 @@ from bulk_import import read_tables, preview_import, template
 from calculation_steps import matrix_steps, network_steps
 from diagnostics import diagnose, diagnostic_report
 from theory import experiment
-from network import (Network, FAMILIES, KINDS, ARCSEC, adjust_network,
+from network import (Network, FAMILIES, KINDS, ARCSEC, NETWORK_EXAMPLES, adjust_network,
                      automatic_matrices, example_network, linearize,
                      network_report, parse_constraints)
 
@@ -76,7 +76,7 @@ def dispatch(op, payload):
     if op == 'theory_experiment': return experiment(payload.get('kind'), payload.get('inputs', {}))
     if op == 'bootstrap':
         return {'families': FAMILIES, 'kinds': KINDS, 'methods': MODEL_NAMES,
-                'formulas': FORMULAS, 'examples': EXAMPLES,
+                'formulas': FORMULAS, 'examples': EXAMPLES, 'network_examples': NETWORK_EXAMPLES,
                 'project': example_network('水准网').to_dict()}
     if op == 'import_read': return read_tables(payload['filename'], payload['content_base64'])
     if op == 'import_preview': return preview_import(payload['project'], payload['tables'], policy=payload.get('policy', 'append'), units=payload.get('units'))
@@ -309,7 +309,8 @@ def main():
             file = dispatch('import_template', {'family': family})
             tables = dispatch('import_read', file)['tables']
             preview = dispatch('import_preview', {'project': example_network(family).to_dict(), 'tables': tables, 'policy': 'replace'})
-            checks['xlsx/'+family] = preview['ok']
+            expected = linearize(example_network(family)).stats
+            checks['xlsx/'+family] = preview['ok'] and all(preview['statistics'][key] == expected[key] for key in ('n','t','r','parameters','constraints','defect'))
         diagnostic_net = Network()
         diagnostic_net.add_point('A', H=100, fixed=['H']); diagnostic_net.add_point('B', H=100)
         for index in range(10): diagnostic_net.add_observation('height', ['A', 'B'], 1.010 if index == 9 else 1., sigma=.001)
@@ -327,7 +328,7 @@ def main():
         else:
             import webview
             webview.settings['ALLOW_DOWNLOADS'] = False
-            api._window = webview.create_window('测量平差工作台 v0.6.2 · React', url, js_api=api,
+            api._window = webview.create_window('测量平差工作台 v0.6.3 · React', url, js_api=api,
                                                width=1440, height=960, min_size=(1060, 740),
                                                background_color='#f8fafc')
             if args.ui_self_test:

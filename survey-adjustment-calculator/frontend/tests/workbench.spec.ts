@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 
-async function ready(page: Page) { await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5') }
+async function ready(page: Page) { await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6') }
 async function continueIfPrompt(page: Page) { const button = page.getByRole('button', { name: '继续', exact: true }); if (await button.isVisible()) await button.click() }
 
 test('home layout and responsive controls render without external requests', async ({ page }) => {
@@ -35,9 +35,9 @@ test('canvas add, drag, connect, edit, delete and undo keep live statistics cons
   await page.getByRole('button', { name: '绘制高差', exact: true }).click()
   await page.getByRole('button', { name: '选择点 A', exact: true }).click()
   await page.getByRole('button', { name: '选择点 P1', exact: true }).click()
-  await expect(page.getByTestId('stat-n')).toHaveText('6')
+  await expect(page.getByTestId('stat-n')).toHaveText('7')
   await expect(page.getByTestId('stat-t')).toHaveText('4')
-  await page.getByRole('button', { name: '编辑观测 O6', exact: true }).click()
+  await page.getByRole('button', { name: '编辑观测 O7', exact: true }).click()
   await page.getByRole('textbox', { name: '实测值', exact: true }).fill('1.5')
   await page.getByRole('textbox', { name: '标准差', exact: true }).fill('0.002')
   await page.getByRole('button', { name: '保存观测', exact: true }).click()
@@ -49,20 +49,25 @@ test('canvas add, drag, connect, edit, delete and undo keep live statistics cons
   await expect(page.locator('[data-point="P1"]')).not.toHaveAttribute('transform', before!)
   await page.getByRole('button', { name: '删除控制点', exact: true }).click()
   await continueIfPrompt(page)
-  await expect(page.getByTestId('stat-n')).toHaveText('5')
-  await page.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(page.getByTestId('stat-n')).toHaveText('6')
+  await page.getByRole('button', { name: '撤销', exact: true }).click()
+  await expect(page.getByTestId('stat-n')).toHaveText('7')
   await expect(page.locator('[data-point="P1"]')).toBeVisible()
 })
 
 test('all seven networks and four methods produce real precision results', async ({ page }) => {
   await ready(page)
   const families = ['水准网', '导线网', 'GNSS网', '测边网', '测角网', '边角网', '坐标观测网']
-  const counts = [5, 10, 15, 6, 6, 12, 8]
+  const counts = [6, 7, 27, 6, 12, 11, 18]
+  const parameters = [3, 4, 18, 6, 6, 4, 6], limits = [0, 0, 3, 1, 0, 0, 0], needed = [3, 4, 15, 5, 6, 4, 6]
   const methods = ['condition', 'condition_parameters', 'indirect', 'indirect_constraints']
   for (let i = 0; i < families.length; i++) {
     if (i) { await page.getByLabel('控制网类型', { exact: true }).selectOption(families[i]); await continueIfPrompt(page) }
     await expect(page.getByTestId('stat-n')).toHaveText(String(counts[i]))
+    await expect(page.getByTestId('stat-t')).toHaveText(String(needed[i]))
+    await expect(page.getByTestId('stat-r')).toHaveText(String(counts[i]-needed[i]))
+    await expect(page.getByTestId('stat-parameters')).toHaveText(String(parameters[i]))
+    await expect(page.getByTestId('stat-constraints')).toHaveText(String(limits[i]))
     for (const method of methods) {
       await page.getByLabel('平差方法', { exact: true }).selectOption(method)
       const calculate = page.getByRole('button', { name: '计算精度', exact: true })

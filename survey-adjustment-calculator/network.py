@@ -18,6 +18,15 @@ import numpy as np
 from adjustment import AdjustmentError, AdjustmentResult, MODEL_NAMES, solve, sym, format_array
 
 FAMILIES = ["水准网", "导线网", "GNSS网", "测边网", "测角网", "边角网", "坐标观测网"]
+NETWORK_EXAMPLES = {
+    "水准网": {"title": "附合水准网示例", "description": "A、E 为已知水准点，沿 A–B–C–D–E 布设附合路线，并增加 A–C、B–D 高差检核。"},
+    "导线网": {"title": "附合导线示例", "description": "以 A–B、E–F 两条已知方向边连接 B–C–D–E 导线，观测 3 条边长与 4 个转折角。"},
+    "GNSS网": {"title": "GNSS基线网示例", "description": "6 个站组成闭合环与中心联测，9 条基线各含 ΔX、ΔY、ΔZ；参考站 A 的 XYZ 通过 3 项精确限制引入。"},
+    "测边网": {"title": "大地四边形测边示例", "description": "观测四边形的 4 条边与 2 条对角线；固定 A 点，利用 B.X = 0 的精确限制确定 A–B 基线方向。"},
+    "测角网": {"title": "中心多边形测角示例", "description": "固定已知基线 A–B，围绕中心点 E 组成 4 个三角形，观测各三角形内角，共 12 个角。"},
+    "边角网": {"title": "双三角形边角示例", "description": "A–B 为已知基线，两个三角形共用 A–C 边，联合观测 5 条边长与 6 个内角。"},
+    "坐标观测网": {"title": "多测回坐标观测示例", "description": "对 A、B、C 三个点分别进行 3 测回 XY 坐标观测，共 18 个标量分量；坐标观测直接提供位置基准。"},
+}
 KINDS = {"height":"高差", "distance":"距离", "angle":"水平角", "azimuth":"方位角",
          "gnss":"GNSS基线", "coordinate":"坐标观测"}
 ARCSEC = math.pi / (180*3600)
@@ -501,31 +510,63 @@ def network_report(net,solution):
 
 
 def example_network(family="水准网", measured=False):
-    net=Network(family,family+"示例")
-    positions=[("A",0,0,100,0),("B",0,120,101.2,2),("C",90,130,102.0,5),("D",100,10,101.5,3)]
-    for name,X,Y,H,Z in positions:
-        fixed=net.axes if (name=="A" or (name=="B" and family not in ("水准网","GNSS网","坐标观测网"))) else ()
-        net.add_point(name,X,Y,H,Z,fixed)
-    edges=[("A","B"),("B","C"),("C","D"),("D","A"),("A","C"),("B","D")]
+    net=Network(family)
+    net.name=NETWORK_EXAMPLES[family]["title"]
+    def point(name, X, Y, *, H=100., Z=0., fixed=()):
+        net.add_point(name, X=X, Y=Y, H=H, Z=Z, fixed=fixed)
+    def triangle(a, b, c):
+        # Observe internal angles, using the same clockwise bearing convention.
+        for station, back, fore in ((a,b,c),(b,c,a),(c,a,b)):
+            p, q, s = net.points[back], net.points[fore], net.points[station]
+            angle=(math.atan2(q["Y"]-s["Y"],q["X"]-s["X"])-math.atan2(p["Y"]-s["Y"],p["X"]-s["X"]))%(2*math.pi)
+            if angle>math.pi: back,fore=fore,back
+            net.add_observation("angle",[back,station,fore])
     if family=="水准网":
-        for a,b in edges[:5]: net.add_observation("height",[a,b])
+        for name,X,Y,H in [("A",0,0,100),("B",35,70,101.2),("C",10,140,102),("D",45,210,101.8),("E",0,280,102.5)]:
+            point(name,X,Y,H=H,fixed=["H"] if name in ("A","E") else [])
+        for a,b in [("A","B"),("B","C"),("C","D"),("D","E"),("A","C"),("B","D")]:
+            net.add_observation("height",[a,b])
+    elif family=="导线网":
+        for name,X,Y in [("A",0,0),("B",0,50),("C",40,110),("D",15,180),("E",60,245),("F",60,295)]:
+            point(name,X,Y,fixed=["X","Y"] if name in ("A","B","E","F") else [])
+        for a,b in [("B","C"),("C","D"),("D","E")]: net.add_observation("distance",[a,b])
+        for back,station,fore in [("A","B","C"),("B","C","D"),("C","D","E"),("D","E","F")]:
+            net.add_observation("angle",[back,station,fore])
     elif family=="GNSS网":
-        for a,b in edges[:5]: net.add_observation("gnss",[a,b],covariance=[[.000025,.000004,0],[.000004,.000036,.000002],[0,.000002,.000064]])
+        for name,X,Y,Z in [("A",0,0,20),("B",10,160,28),("C",120,210,45),("D",210,110,52),("E",145,-40,35),("F",90,85,39)]:
+            point(name,X,Y,Z=Z)
+        for axis in net.axes: net.constraints.append({"terms":{"A."+axis:1.},"value":net.points["A"][axis]})
+        for a,b in [("A","B"),("B","C"),("C","D"),("D","E"),("E","A"),("A","F"),("B","F"),("C","F"),("E","F")]:
+            net.add_observation("gnss",[a,b],covariance=[[.000025,.000004,0],[.000004,.000036,.000002],[0,.000002,.000064]])
+    elif family=="测边网":
+        for name,X,Y in [("A",0,0),("B",0,170),("C",125,145),("D",110,-25)]:
+            point(name,X,Y,fixed=["X","Y"] if name=="A" else [])
+        net.constraints=[{"terms":{"B.X":1.},"value":0.}]
+        for a,b in [("A","B"),("B","C"),("C","D"),("D","A"),("A","C"),("B","D")]:
+            net.add_observation("distance",[a,b])
+    elif family=="测角网":
+        for name,X,Y in [("A",0,0),("B",0,180),("C",130,190),("D",145,-10),("E",70,85)]:
+            point(name,X,Y,fixed=["X","Y"] if name in ("A","B") else [])
+        for ids in [("A","B","E"),("B","C","E"),("C","D","E"),("D","A","E")]: triangle(*ids)
+    elif family=="边角网":
+        for name,X,Y in [("A",0,0),("B",0,160),("C",120,110),("D",190,-35)]:
+            point(name,X,Y,fixed=["X","Y"] if name in ("A","B") else [])
+        for a,b in [("A","B"),("B","C"),("C","A"),("C","D"),("D","A")]:
+            net.add_observation("distance",[a,b])
+        triangle("A","B","C"); triangle("A","C","D")
     elif family=="坐标观测网":
-        for p in ("B","C","D"): net.add_observation("coordinate",[p])
-        for a,b in edges[1:3]:net.add_observation("distance",[a,b])
-    else:
-        if family in ("导线网","测边网","边角网"):
-            for a,b in (edges[:4] if family=="导线网" else edges):net.add_observation("distance",[a,b])
-        if family in ("导线网","测角网","边角网"):
-            for ids in [("B","A","C"),("A","B","C"),("B","A","D"),("A","B","D"),("B","C","D"),("A","D","C")]:net.add_observation("angle",ids)
+        for name,X,Y in [("A",10,10),("B",30,170),("C",145,95)]: point(name,X,Y)
+        for _ in range(3):
+            for name in net.points: net.add_observation("coordinate",[name],sigma=[.003,.004])
+    if net.constraints: net.method="indirect_constraints"
     if measured:
         rng=np.random.default_rng(25)
         for obs in net.observations:
             f,_,_,cov,_=_observation(net,obs,net.points,{})
             values=f+rng.multivariate_normal(np.zeros(len(f)),cov)
             obs["value"]=float(math.degrees(values[0])) if obs["kind"] in ANGLES else values.tolist()
+        constrained={next(iter(c["terms"])) for c in net.constraints if len(c["terms"])==1}
         for p,data in net.points.items():
             for axis in net.axes:
-                if axis not in data["fixed"]:data[axis]+=float(rng.normal(0,.15))
+                if axis not in data["fixed"] and p+"."+axis not in constrained:data[axis]+=float(rng.normal(0,.15))
     return net

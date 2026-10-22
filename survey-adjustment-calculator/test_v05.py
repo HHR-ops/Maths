@@ -106,17 +106,19 @@ class ImportTests(unittest.TestCase):
                 preview = preview_import(old, tables, policy='replace')
                 self.assertTrue(preview['ok'], preview['errors'])
                 self.assertEqual(old, before)
-                self.assertEqual(preview['added_points'], 4)
+                self.assertEqual(preview['added_points'], len(old['points']))
                 self.assertEqual(preview['warnings'], [])
                 result = adjust_network(Network.from_dict(preview['project']), design=False)
                 self.assertEqual(result.model.stats['defect'], 0)
 
     def test_points_and_observations_csv_are_order_independent(self):
         pointfile, obsfile = template('GNSS网', 'points'), template('GNSS网', 'observations')
+        constraints = template('GNSS网', 'constraints')
         tables = read_tables(obsfile['filename'], obsfile['content_base64'])['tables']+read_tables(pointfile['filename'], pointfile['content_base64'])['tables']
+        tables += read_tables(constraints['filename'], constraints['content_base64'])['tables']
         data = preview_import(Network('GNSS网').to_dict(), tables)
         self.assertTrue(data['ok'], data['errors'])
-        self.assertEqual(data['statistics']['n'], 15)
+        self.assertEqual(data['statistics']['n'], 27)
         self.assertIsNotNone(data['project']['observations'][0]['covariance'])
 
     def test_custom_mapping_units_and_boolean_fixed_fields(self):

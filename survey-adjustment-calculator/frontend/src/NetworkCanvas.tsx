@@ -17,6 +17,7 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
   const drag = useRef<{ id?: string; px: number; py: number; cam: typeof camera; moved: boolean; initial?: Point } | null>(null)
   const suppress = useRef(false)
   const points = { ...project.points, ...(moving ? { [moving.id]: moving.point } : {}) }
+  const constrained = new Set(project.constraints.flatMap(c => Object.entries(c.terms).filter(([,v]) => v !== 0).map(([key]) => key.split('.')[0])))
   const fit = () => {
     const p = Object.values(project.points)
     if (!p.length) { setCamera({ x: 50, y: 65, scale: 2.2 }); return }
@@ -44,6 +45,22 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
   const gridStep = 25 * camera.scale
   const origin = xy({ X: 0, Y: 0, Z: 0, H: 0, fixed: [] })
   const precisionMax = Math.max(...(solution?.point_precision.map(p => Number(p.major || p.mH || 0)) || []), 0.00001)
+  // Keep observation labels clear of point names and earlier observation labels.
+  const labelBoxes = Object.entries(points).flatMap(([id,p]) => {
+    const at = xy(p), y = at.y-(project.family === '坐标观测网' ? 46 : 23)
+    return [{ left: at.x-id.length*5-5, right: at.x+id.length*5+5, top: y-14, bottom: y+4 }, { left: at.x-18, right: at.x+18, top: at.y-18, bottom: at.y+18 }]
+  })
+  const placeLabel = (x: number, y: number, text: string, start: boolean, dx: number, dy: number) => {
+    const width = text.length*7+8
+    const candidates = [0,20,-20,40,-40,60,-60,80,-80].map(offset => ({ x: x+dx*offset, y: y+dy*offset }))
+    const boxAt = (at: { x: number; y: number }) => ({ left: at.x-(start ? 0 : width/2), right: at.x+(start ? width : width/2), top: at.y-13, bottom: at.y+5 })
+    const at = candidates.find(candidate => {
+      const box = boxAt(candidate)
+      return box.left > 8 && box.right < size.w-8 && box.top > 8 && box.bottom < size.h-8 && !labelBoxes.some(other => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top)
+    }) || candidates[0]
+    labelBoxes.push(boxAt(at))
+    return at
+  }
   return <div className="canvas-panel">
     <div className="canvas-heading"><div><span className="live-dot" /><strong>网形画布</strong><span className="muted">{project.family === 'GNSS网' ? 'XYZ 坐标 · XY 投影' : project.family === '水准网' ? '平面示意 · H 高程' : 'X 北 / Y 东'}</span></div><div><Button size="sm" variant="ghost" onClick={onTogglePrecision} disabled={!solution} className={showPrecision ? 'is-on' : ''}><CircleDot size={14} />精度图</Button><Button size="icon" variant="ghost" title="适应画布" aria-label="适应画布" onClick={fit}><LocateFixed size={16} /></Button></div></div>
     <div className={'network-canvas tool-'+tool} ref={ref} data-testid="network-canvas" onWheel={e => {
@@ -81,10 +98,26 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
           const flagged = solution?.diagnostics?.flagged_observations.includes(o.id)
           const color = flagged ? '#cb6474' : o.kind === 'gnss' ? '#7c68c6' : o.kind === 'angle' || o.kind === 'azimuth' ? '#8b9ac2' : '#328f9c'
           const a = p[0], b = p[p.length-1], mid = { x: (a.x+b.x)/2, y: (a.y+b.y)/2 }
+          const labelIndex = project.observations.slice(0,i).filter(prior => prior.kind === o.kind && (o.kind === 'coordinate' ? prior.points[0] === o.points[0] : o.kind === 'angle' && [prior.points[0], prior.points[prior.points.length-1]].every(id => [o.points[0],o.points[o.points.length-1]].includes(id)))).length
+          let angleArc: { path: string; x: number; y: number; dx: number; dy: number } | null = null
+          if (o.kind === 'angle' && p.length === 3) {
+            const station = p[1]
+            const start = Math.atan2(a.y-station.y, a.x-station.x)
+            let sweep = Math.atan2(b.y-station.y, b.x-station.x)-start
+            while (sweep > Math.PI) sweep -= 2*Math.PI
+            while (sweep < -Math.PI) sweep += 2*Math.PI
+            const atStation = project.observations.slice(0,i).filter(prior => prior.kind === 'angle' && prior.points[1] === o.points[1]).length
+            const radius = Math.min(32+atStation*15, Math.hypot(a.x-station.x,a.y-station.y)*.4, Math.hypot(b.x-station.x,b.y-station.y)*.4)
+            const end = start+sweep, bisector = start+sweep/2
+            angleArc = { path: `M${station.x+radius*Math.cos(start)},${station.y+radius*Math.sin(start)} A${radius},${radius} 0 0 ${sweep > 0 ? 1 : 0} ${station.x+radius*Math.cos(end)},${station.y+radius*Math.sin(end)}`, x: station.x+(radius+21)*Math.cos(bisector), y: station.y+(radius+21)*Math.sin(bisector)+4, dx: Math.cos(bisector), dy: Math.sin(bisector) }
+          }
+          const labelText = `${o.id} · ${o.kind === 'height' ? 'ΔH' : o.kind === 'gnss' ? 'ΔXYZ' : o.kind === 'distance' ? 'S' : o.kind === 'angle' ? 'β' : o.kind === 'azimuth' ? 'α' : o.components.join('')}`
+          const length = Math.hypot(b.x-a.x,b.y-a.y) || 1
+          const label = placeLabel(angleArc ? angleArc.x : p.length === 1 ? a.x+38 : mid.x, angleArc ? angleArc.y : p.length === 1 ? a.y-16+labelIndex*18 : mid.y-10-(i % 3)*8-labelIndex*14, labelText, p.length === 1, angleArc ? angleArc.dx : p.length === 1 ? 1 : -(b.y-a.y)/length, angleArc ? angleArc.dy : p.length === 1 ? 0 : (b.x-a.x)/length)
           const path = p.map(q => `${q.x},${q.y}`).join(' ')
           return <g key={o.id} data-object="observation" className={'canvas-edge '+(flagged ? 'flagged-edge' : '')} opacity={o.enabled ? 1 : .3} role="button" aria-label={'选择观测 '+o.id} onClick={e => { e.stopPropagation(); onSelect({ type: 'observation', id: o.id }) }}>
-            {p.length > 1 ? <><polyline points={path} fill="none" stroke="transparent" strokeWidth="14" /><polyline points={path} fill="none" stroke={selected ? '#4f46e5' : color} strokeWidth={selected ? 2.7 : 1.65} strokeDasharray={o.kind === 'angle' ? '5 4' : undefined} /></> : <circle cx={a.x} cy={a.y} r="22" fill="none" stroke={color} strokeDasharray="4 3" />}
-            <text x={mid.x+ (p.length === 1 ? 28 : 0)} y={mid.y-9-(i % 2)*4} textAnchor="middle" className={'edge-label '+(selected ? 'selected' : '')} filter="url(#label-bg)">{o.id} · {o.kind === 'height' ? 'ΔH' : o.kind === 'gnss' ? 'ΔXYZ' : o.kind === 'distance' ? 'S' : names[o.kind]}</text>
+            {p.length > 1 ? <><polyline points={path} fill="none" stroke="transparent" strokeWidth="14" /><polyline points={path} fill="none" stroke={selected ? '#4f46e5' : color} strokeWidth={selected ? 2.7 : 1.65} strokeDasharray={o.kind === 'angle' ? '5 4' : undefined} />{angleArc && <path d={angleArc.path} fill="none" stroke={selected ? '#4f46e5' : color} strokeWidth={selected ? 2 : 1.4} />}</> : <circle cx={a.x} cy={a.y} r={22+labelIndex*7} fill="none" stroke={color} strokeDasharray="4 3" />}
+            <text x={label.x} y={label.y} textAnchor={p.length === 1 ? 'start' : 'middle'} className={'edge-label '+(selected ? 'selected' : '')} filter="url(#label-bg)">{labelText}</text>
           </g>
         })}
         {chain.map((id, i) => { const p = xy(points[id]); return <g key={id} pointerEvents="none"><circle cx={p.x} cy={p.y} r="21" fill="#eef2ff" stroke="#6366f1" strokeDasharray="3 2" /><text x={p.x} y={p.y-27} textAnchor="middle" className="chain-label">{i+1}</text></g> })}
@@ -95,15 +128,15 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
         })}
         {Object.entries(points).map(([id, p]) => {
           const at = xy(p), fixed = p.fixed.length > 0, selected = selection?.type === 'point' && selection.id === id
-          return <g key={id} data-object="point" data-point={id} transform={`translate(${at.x} ${at.y})`} className="canvas-point" role="button" aria-label={'选择点 '+id} onClick={e => { e.stopPropagation(); choose(id) }} onPointerDown={e => {
+          return <g key={id} data-object="point" data-point={id} data-constrained={constrained.has(id) ? 'true' : undefined} transform={`translate(${at.x} ${at.y})`} className="canvas-point" role="button" aria-label={'选择点 '+id} onClick={e => { e.stopPropagation(); choose(id) }} onPointerDown={e => {
             if (tool !== 'select' || e.button !== 0) return
             e.stopPropagation(); onSelect({ type: 'point', id }); suppress.current = false
             drag.current = { id, px: e.clientX, py: e.clientY, cam: camera, initial: p, moved: false }
             e.currentTarget.ownerSVGElement!.setPointerCapture(e.pointerId)
           }}>
             <circle r={selected ? 19 : 14} fill={selected ? '#e4e7ff' : '#fcfdff'} stroke={selected ? '#c7d2fe' : 'none'} />
-            {fixed ? <path d="M0 -7 L7 6 L-7 6 Z" fill="#475569" stroke="#fff" strokeWidth="1.5" /> : <><circle r="6" fill="white" stroke={selected ? '#4f46e5' : '#328f9c'} strokeWidth="2.2" /><circle r="1.5" fill={selected ? '#4f46e5' : '#328f9c'} /></>}
-            <text x="0" y="-23" textAnchor="middle" className="point-label">{id}</text>
+            {fixed ? <path d="M0 -7 L7 6 L-7 6 Z" fill="#475569" stroke="#fff" strokeWidth="1.5" /> : constrained.has(id) ? <path d="M0 -8 L8 0 L0 8 L-8 0 Z" fill="#fff9eb" stroke={selected ? '#4f46e5' : '#9b762f'} strokeWidth="1.8" /> : <><circle r="6" fill="white" stroke={selected ? '#4f46e5' : '#328f9c'} strokeWidth="2.2" /><circle r="1.5" fill={selected ? '#4f46e5' : '#328f9c'} /></>}
+            <text x="0" y={project.family === '坐标观测网' ? -46 : -23} textAnchor="middle" className="point-label">{id}</text>
             {project.family === '水准网' && <text x="0" y="31" textAnchor="middle" className="point-value">{solution && !solution.design ? 'Ĥ' : 'H'} {(solution?.points[id]?.H ?? p.H).toFixed(3)}</text>}
           </g>
         })}
@@ -111,7 +144,7 @@ export default function NetworkCanvas({ project, selection, onSelect, onMove, on
       </svg>
       <div className="canvas-tools" data-control="true"><Button variant="ghost" size="icon" aria-label="选择工具" title="选择 / 移动" className={tool === 'select' ? 'active' : ''} onClick={() => changeTool('select')}><MousePointer2 size={17} /></Button><Button variant="ghost" size="icon" aria-label="添加控制点" title="添加控制点" className={tool === 'point' ? 'active' : ''} onClick={() => changeTool('point')}><Plus size={19} /></Button><span className="tool-separator" />{kinds(project.family).map(k => <Button key={k} variant="ghost" size="icon" aria-label={'绘制'+names[k]} title={names[k]} className={tool === k ? 'active' : ''} onClick={() => changeTool(k)}>{k === 'angle' ? <Triangle size={17} /> : k === 'azimuth' ? <ArrowUpRight size={18} /> : k === 'coordinate' ? <Crosshair size={18} /> : k === 'distance' ? <Ruler size={17} /> : <Link2 size={17} />}</Button>)}</div>
       <div className="canvas-compass"><span>X / N</span><ArrowUpRight size={27} style={{ transform: 'rotate(-45deg)' }} /><small>Y / E →</small></div>
-      <div className="canvas-legend"><span><i className="legend-fixed" />已知点</span><span><i className="legend-point" />待定点</span>{showPrecision && <span className="precision-note">1σ {project.family === '水准网' ? '高程误差棒' : '误差椭圆'} · 放大显示</span>}</div>
+      <div className="canvas-legend"><span><i className="legend-fixed" />已知点</span><span><i className="legend-point" />待定点</span>{constrained.size > 0 && <span><i className="legend-constrained" />参与精确限制</span>}{showPrecision && <span className="precision-note">1σ {project.family === '水准网' ? '高程误差棒' : '误差椭圆'} · 放大显示</span>}</div>
       <div className="canvas-zoom"><Button size="icon" variant="ghost" aria-label="缩小" onClick={() => setCamera(c => ({ ...c, scale: Math.max(.15, c.scale/1.2) }))}><ZoomOut size={15} /></Button><span>{Math.round(camera.scale/2.2*100)}%</span><Button size="icon" variant="ghost" aria-label="放大" onClick={() => setCamera(c => ({ ...c, scale: Math.min(100, c.scale*1.2) }))}><ZoomIn size={15} /></Button></div>
     </div>
     <div className="canvas-status"><span><Hand size={12} />{hints[tool]}{chain.length ? `（已选 ${chain.join(' → ')}）` : ''}</span><span className="mono">{cursor ? `X ${cursor.x.toFixed(1)}  Y ${cursor.y.toFixed(1)} m` : '坐标单位 m'}</span></div>

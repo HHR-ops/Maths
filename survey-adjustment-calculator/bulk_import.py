@@ -18,11 +18,12 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from adjustment import AdjustmentError, parse_matrix
-from network import Network, KINDS, DEFAULT_SIGMA, ANGLES, angle_degrees, example_network, linearize
+from network import Network, KINDS, DEFAULT_SIGMA, ANGLES, angle_degrees, example_network, linearize, parse_constraints
 
 MAX_FILE = 4*1024*1024
 MAX_ROWS = 2000
 MAX_COLUMNS = 64
+CONSTRAINT_FIELDS = {'equation': ['限制方程', '约束方程', 'constraint', 'equation']}
 POINT_FIELDS = {'name': ['点号', '点名', 'name', 'point', 'id'],
                 'X': ['X', '北坐标', 'northing'], 'Y': ['Y', '东坐标', 'easting'],
                 'Z': ['Z'], 'H': ['H', '高程', 'height'], 'fixed': ['固定分量', 'fixed'],
@@ -142,15 +143,15 @@ def read_tables(filename, content):
         headers = [str(value or '').strip() for value in row]
         if len(set(h for h in headers if h)) != len([h for h in headers if h]):
             raise AdjustmentError(f'{title} 有重复列名，请先区分后导入。')
-        pm, om = mapping(headers, POINT_FIELDS), mapping(headers, OBS_FIELDS)
-        suggested = 'observations' if 'kind' in om or ('from' in om and 'to' in om) else 'points' if 'name' in pm and any(a in pm for a in ('X', 'Y', 'Z', 'H')) else 'ignore'
+        pm, om, cm = mapping(headers, POINT_FIELDS), mapping(headers, OBS_FIELDS), mapping(headers, CONSTRAINT_FIELDS)
+        suggested = 'constraints' if 'equation' in cm else 'observations' if 'kind' in om or ('from' in om and 'to' in om) else 'points' if 'name' in pm and any(a in pm for a in ('X', 'Y', 'Z', 'H')) else 'ignore'
         tables.append({'name': title, 'filename': str(filename), 'headers': headers,
                        'rows': [r+[None]*(len(headers)-len(r)) for _, r in nonempty[1:]],
                        'source_rows': [i+1 for i, _ in nonempty[1:]], 'formulas': formulas,
-                       'type': suggested, 'mapping': om if suggested == 'observations' else pm,
-                       'mappings': {'points': pm, 'observations': om}})
+                       'type': suggested, 'mapping': cm if suggested == 'constraints' else om if suggested == 'observations' else pm,
+                       'mappings': {'points': pm, 'observations': om, 'constraints': cm}})
     if not tables: raise AdjustmentError('文件中没有可导入的数据表。')
-    return {'tables': tables, 'fields': {'points': list(POINT_FIELDS), 'observations': list(OBS_FIELDS)}}
+    return {'tables': tables, 'fields': {'points': list(POINT_FIELDS), 'observations': list(OBS_FIELDS), 'constraints': list(CONSTRAINT_FIELDS)}}
 
 
 def preview_import(project, tables, *, policy='append', units=None):
@@ -163,15 +164,15 @@ def preview_import(project, tables, *, policy='append', units=None):
     errors, warnings, added_points, added_observations = [], [], 0, 0
     def error(table, row, message, column=None):
         errors.append({'table': table.get('name', ''), 'file': table.get('filename', ''), 'row': row, 'column': column, 'message': str(message)})
-    selected = [t for t in tables if t.get('type') in ('points', 'observations')]
-    if not selected: raise AdjustmentError('至少选择一张控制点表或观测表。')
+    selected = [t for t in tables if t.get('type') in ('points', 'observations', 'constraints')]
+    if not selected: raise AdjustmentError('至少选择一张控制点表、观测表或限制条件表。')
     if sum(len(t.get('rows', [])) for t in selected) > MAX_ROWS: raise AdjustmentError('一次导入最多 2000 行数据。')
     for t in selected:
         if not isinstance(t.get('headers'), list) or not isinstance(t.get('mapping'), dict): raise AdjustmentError('列映射无效。')
         if any(not isinstance(v, int) or isinstance(v, bool) or not 0 <= v < len(t['headers']) for v in t['mapping'].values()):
             raise AdjustmentError('列映射超出表格范围。')
         for item in t.get('formulas', []): error(t, item['row'], item['message'], item['column'])
-    for kind in ('points', 'observations'):
+    for kind in ('points', 'observations', 'constraints'):
         for table in selected:
             if table['type'] != kind: continue
             maps, headers = table['mapping'], table['headers']
@@ -212,6 +213,12 @@ def preview_import(project, tables, *, policy='append', units=None):
                                 fixed = [k for k in fixed if k != axis]+([axis] if _bool(get('fixed_'+axis)) else [])
                         net.add_point(name, fixed=sorted(set(fixed)), **coordinates)
                         added_points += 1
+                    elif kind == 'constraints':
+                        equation = str(get('equation', '')).strip()
+                        if not equation: raise AdjustmentError('请映射并填写限制方程。')
+                        constraints = parse_constraints(equation)
+                        if len(constraints) != 1: raise AdjustmentError('每行请填写一条限制方程。')
+                        net.constraints.extend(constraints)
                     else:
                         raw_kind = str(get('kind', '')).strip()
                         aliases = {normalize(k): k for k in KINDS}
@@ -296,22 +303,26 @@ def template(family, kind='xlsx'):
         cov = '\n'.join(' '.join(str(v) for v in row) for row in o['covariance']) if o['covariance'] else None
         obs_rows.append([o['id'], KINDS[o['kind']], ids[1] if angle else ids[0], ids[-1] if len(ids)>1 else None,
                          ids[0] if angle else None, ids[2] if angle else None, text(o['value']), text(o['sigma']), ','.join(o['components']), cov, True])
-    if kind in ('points', 'observations'):
+    constraint_headers = ['限制方程']
+    constraint_rows = [[' '.join(name+':'+str(coef) for name,coef in c['terms'].items())+' = '+str(c['value'])] for c in net.constraints]
+    if kind in ('points', 'observations', 'constraints'):
         output = io.StringIO(); writer = csv.writer(output)
-        writer.writerow(point_headers if kind == 'points' else obs_headers)
-        writer.writerows(point_rows if kind == 'points' else obs_rows)
+        writer.writerow(point_headers if kind == 'points' else constraint_headers if kind == 'constraints' else obs_headers)
+        writer.writerows(point_rows if kind == 'points' else constraint_rows if kind == 'constraints' else obs_rows)
         data = output.getvalue().encode('utf-8-sig')
-        filename = family+('-控制点.csv' if kind == 'points' else '-观测.csv')
+        filename = family+('-控制点.csv' if kind == 'points' else '-限制条件.csv' if kind == 'constraints' else '-观测.csv')
     else:
         book = Workbook(); book.remove(book.active)
-        for title, headers, rows in [('控制点', point_headers, point_rows), ('观测', obs_headers, obs_rows)]:
+        sheets = [('控制点', point_headers, point_rows), ('观测', obs_headers, obs_rows)]
+        if constraint_rows: sheets.append(('限制条件', constraint_headers, constraint_rows))
+        for title, headers, rows in sheets:
             sheet = book.create_sheet(title); sheet.append(headers)
             for row in rows: sheet.append(row)
             sheet.freeze_panes = 'B2'; sheet.auto_filter.ref = sheet.dimensions
             for cell in sheet[1]: cell.font = Font(name='Microsoft YaHei', bold=True, color='FFFFFF'); cell.fill = PatternFill('solid', fgColor='5453D7'); cell.alignment = Alignment(vertical='center')
             sheet.row_dimensions[1].height = 26
             for column in sheet.columns:
-                sheet.column_dimensions[column[0].column_letter].width = 18 if column[0].value != '协方差阵' else 44
+                sheet.column_dimensions[column[0].column_letter].width = 44 if column[0].value in ('协方差阵','限制方程') else 18
                 for cell in list(column)[1:]: cell.font = Font(name='Microsoft YaHei', size=11); cell.alignment = Alignment(vertical='top', wrap_text=True)
             for row in sheet.iter_rows(min_row=2):
                 for cell in row:
@@ -319,7 +330,8 @@ def template(family, kind='xlsx'):
         info = book.create_sheet('导入说明')
         for line in ['这些是可计算的示例数据，正式观测请替换。', '点号须唯一；长度与长度标准差为米。',
                      '角度值为十进制度或 123:45:56.7，角度标准差为角秒。', 'GNSS 协方差为同一 XYZ 框架中的 3×3 对称正定阵，单位 m²。',
-                     '固定分量用 X,Y,Z 或 H；参与计算用 true/false。', '导入前可预览并调整列映射；错误不会部分写入项目。',
+                     '固定分量用 X,Y,Z 或 H；参与计算用 true/false。', '限制条件表每行一条方程，例如 A.X:1 = 0；长度常数按米填写。固定分量不计入额外限制数。',
+                     '导入前可预览并调整列映射；错误不会部分写入项目。',
                      '仅导入数值，不计算 Excel 公式；公式结果请先粘贴为值。']:
             info.append([line])
         info.column_dimensions['A'].width = 100

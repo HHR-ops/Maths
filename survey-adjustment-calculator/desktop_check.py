@@ -9,7 +9,7 @@ def run_check(window, output):
     exported = output.with_suffix('.export.json')
     try:
         for _ in range(200):
-            if window.evaluate_js("document.querySelector('[data-testid=stat-n]')?.textContent === '5'"): break
+            if window.evaluate_js("document.querySelector('[data-testid=stat-n]')?.textContent === '6'"): break
             time.sleep(.1)
         else: raise RuntimeError('React window did not become ready')
         result['native_bridge'] = window.evaluate_js("typeof window.pywebview.api.save_file === 'function'")
@@ -49,7 +49,7 @@ def run_check(window, output):
             time.sleep(.1)
         result['theory_experiment'] = window.evaluate_js("document.querySelector('[data-metric=\"半轴倍率 k\"]')?.textContent.includes('2.447747') || false")
         result['theory_layout'] = window.evaluate_js('document.documentElement.scrollWidth <= innerWidth')
-        result['ok'] = result['native_bridge'] and result['no_horizontal_overflow'] and result['precision_rows'] == 4 and result['native_export'] and result['native_xlsx_roundtrip'] and result['calculation_steps'] and result['offline_theory'] and result['theory_experiment'] and result['theory_layout']
+        result['ok'] = result['native_bridge'] and result['no_horizontal_overflow'] and result['precision_rows'] == 5 and result['native_export'] and result['native_xlsx_roundtrip'] and result['calculation_steps'] and result['offline_theory'] and result['theory_experiment'] and result['theory_layout']
     except Exception as exc:
         result.update(ok=False, error=repr(exc))
     finally:

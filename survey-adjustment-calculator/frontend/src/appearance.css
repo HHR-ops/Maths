@@ -1,4 +1,9 @@
 /* Desktop appearance: readable text, distinct controls, quiet scrollbars. */
+.network-example-note { display:flex; align-items:flex-start; gap:8px; margin:-3px 0 14px; padding:0 2px; font-size:12px; line-height:1.8; color:#5f6f86; }
+.network-example-note>svg { margin-top:4px; }
+.network-example-note>strong { font-size:11px; font-weight:600; color:#53617b; white-space:nowrap; }
+.network-example-note>span { min-width:0; }
+.legend-constrained { width:7px; height:7px; border:1.5px solid #9b762f; background:#fff9eb; transform:rotate(45deg); margin-right:2px; }
 :root {
   color-scheme: light;
   font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;

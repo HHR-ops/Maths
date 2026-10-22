@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import path from 'node:path'
 
 test('xlsx template imports atomically and exposes equation steps, matrix links, and four-method comparison', async ({ page }) => {
-  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6')
   await page.getByRole('button', { name: '批量导入', exact: true }).click()
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Excel 模板', exact: true }).click()
@@ -13,7 +13,7 @@ test('xlsx template imports atomically and exposes equation steps, matrix links,
   await expect(page.locator('.import-table-tabs')).toContainText('控制点')
   await page.getByRole('button', { name: '检查并预览', exact: true }).click()
   await expect(page.getByTestId('import-validation')).toContainText('数据校验通过')
-  await expect(page.getByTestId('import-validation')).toContainText('n=5，t=3，r=2')
+  await expect(page.getByTestId('import-validation')).toContainText('n=6，t=3，r=3')
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: '../qa/v05-import.png', fullPage: true })
   await page.getByRole('button', { name: '替换并导入', exact: true }).click()
@@ -32,7 +32,7 @@ test('xlsx template imports atomically and exposes equation steps, matrix links,
 })
 
 test('column mapping can correct a failed preview while the current project remains untouched', async ({ page }) => {
-  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6')
   await page.getByRole('button', { name: '批量导入', exact: true }).click()
   await page.getByLabel('批量数据文件', { exact: true }).setInputFiles({ name: 'points.csv', mimeType: 'text/csv', buffer: Buffer.from('标识,高(mm),错误列,已知\nN1,100000,abc,是\nN2,101200,def,否\n') })
   await page.getByLabel('导入表格用途', { exact: true }).selectOption('points')
@@ -42,7 +42,7 @@ test('column mapping can correct a failed preview while the current project rema
   await page.getByLabel('映射 fixed', { exact: true }).selectOption('3')
   await page.getByRole('button', { name: '检查并预览', exact: true }).click()
   await expect(page.getByTestId('import-validation')).toContainText('尚未写入项目')
-  await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await expect(page.getByTestId('stat-n')).toHaveText('6')
   await expect(page.getByRole('button', { name: '替换并导入', exact: true })).toBeDisabled()
   await page.getByLabel('映射 H', { exact: true }).selectOption('1')
   await expect(page.getByTestId('import-validation')).toHaveCount(0)
@@ -53,11 +53,11 @@ test('column mapping can correct a failed preview while the current project rema
   await page.getByRole('tab', { name: '控制点', exact: true }).click()
   await expect(page.locator('.data-panel tbody')).toContainText('101.2')
   await page.getByRole('button', { name: '撤销', exact: true }).click()
-  await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await expect(page.getByTestId('stat-n')).toHaveText('6')
 })
 
 test('gross-error diagnostics highlight the observation, disable the whole observation, and compare recalculation', async ({ page }) => {
-  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6')
   const project = { format: 'survey-network-project', version: 1, name: '粗差检验例', family: '水准网', method: 'indirect', constraints: [],
     points: { A: { X: 0, Y: 0, H: 100, Z: 0, fixed: ['H'] }, B: { X: 80, Y: 120, H: 100, Z: 0, fixed: [] } },
     observations: Array.from({ length: 10 }, (_, i) => ({ id: 'O'+(i+1), kind: 'height', points: ['A', 'B'], value: i === 9 ? 1.01 : 1, sigma: .001, covariance: null, components: ['H'], enabled: true })) }
@@ -84,7 +84,7 @@ test('gross-error diagnostics highlight the observation, disable the whole obser
 })
 
 test('matrix methods expose actual equation stages and prior-scale diagnostics', async ({ page }) => {
-  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('5')
+  await page.goto('/'); await expect(page.getByTestId('stat-n')).toHaveText('6')
   await page.getByRole('button', { name: '附限间接平差', exact: true }).click()
   await page.locator('.matrix-submit').getByRole('button', { name: '计算平差', exact: true }).click()
   await expect(page.locator('.result-summary')).toBeVisible()
