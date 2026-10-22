@@ -206,7 +206,7 @@ def solve(model: str, *, A=None, B=None, w=None, l=None, C=None, d=None,
             t = B.shape[1]
             u, s, vt, rank = _svd(B, "参数系数 B", warnings, full=True)
             if rank != t:
-                raise AdjustmentError(f"参数系数 B 列秩不足（秩 {rank}，参数数 {t}）。")
+                raise AdjustmentError(f"参数系数 B 列秩不足（秩 {rank}，参数个数 {t}）。")
             B_plus = (vt[:t].T / s[:t]) @ u[:, :t].T
             Z = u[:, t:]
         else:
@@ -252,7 +252,7 @@ def solve(model: str, *, A=None, B=None, w=None, l=None, C=None, d=None,
             d = vector(d, c, "d")
             u, s, vt, rank = _svd(C, "限制系数 C", warnings, full=True)
             if rank != c:
-                raise AdjustmentError(f"限制条件不独立（秩 {rank}，条件数 {c}）。请删去重复或矛盾限制。")
+                raise AdjustmentError(f"限制条件不独立（秩 {rank}，限制条件个数 {c}）。请删去重复或矛盾限制。")
             xp = -vt[:c].T @ ((u.T @ d) / s)
             Z = vt[c:].T
             details.update({"C": C, "d": d})
@@ -321,11 +321,12 @@ def make_report(result: AdjustmentResult, title="未命名计算", digits=8) -> 
              f"模型：{MODEL_NAMES[r.model]}", f"方程：{FORMULAS[r.model]}",
              "符号：v = 平差值 − 观测值；Q = P⁻¹；Cov(L) = σ₀² Q。",
              "本次计算使用线性 / 已线性化方程；x 为所输入方程中的未知量。",
-             f"观测数 n = {r.n}；参数数 t = {r.t}；自由度 f = {r.dof}",
+             f"总观测数 n = {r.n}；必要观测数 t = {r.n-r.dof}；多余观测数 r = {r.dof}",
+             f"待估参数个数 u = {r.t}；残差自由度 f = {r.dof}",
              f"vᵀPv = {r.weighted_sum:.{digits}g}",
              f"后验单位权中误差 = {r.posterior_sigma:.{digits}g}" if r.posterior_sigma is not None else "后验单位权中误差：无法估计（自由度为 0）",
              f"精度基准：{'先验' if r.precision_source == 'prior' else '后验'}；"
-             + (f"采用 σ₀ = {r.precision_sigma:.{digits}g}" if r.precision_sigma is not None else "中误差不可用"),
+             + (f"所用标准差尺度 σ = {r.precision_sigma:.{digits}g}" if r.precision_sigma is not None else "中误差不可用"),
              f"方程校核最大绝对差 = {r.equation_error:.3e}",
              f"限制条件校核最大绝对差 = {r.constraint_error:.3e}"]
     for warning in r.warnings:

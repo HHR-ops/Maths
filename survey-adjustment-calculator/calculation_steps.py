@@ -51,12 +51,12 @@ def network_steps(net, solution):
          'description': '点坐标与长度为米；角度方程内使用弧度。固定分量已从未知参数中消去。设计模式的 L 为名义几何值。',
          'matrices': {'L · 方程中的观测向量': entry(first.L, obs), 'f(X₀) · 初始几何值': entry(first.predicted, obs),
                       'X₀ · 初始待估坐标': entry([net.points[p][a] for p, a in first.keys], params)}},
-        {'id': 'linearize', 'title': '线性化与限制', 'formula': 'v = B₀ x − l₀；C x + d = 0',
+        {'id': 'linearize', 'title': '线性化与限制条件', 'formula': 'v = B₀ x − l₀；C x + d = 0',
          'description': 'B₀ 是观测函数在初始坐标处的雅可比。点击带观测标签的矩阵行，可以定位画布中的观测。',
          'matrices': {'B₀ · 初始观测系数': entry(first.B, obs, params), 'l₀ · 初始常数项': entry(first.l, obs),
                       'C · 精确限制系数': entry(first.C, columns=params), 'd₀ · 初始限制常数': entry(first.d)}},
         {'id': 'weights', 'title': '由精度生成权阵', 'formula': 'Cov(L) = σ₀² Q，P = Q⁻¹，网络先验 σ₀ = 1',
-         'description': '每个观测块独立；GNSS 基线块可以包含完整相关协方差。P 与角度导数采用一致的内部单位。',
+         'description': '不同观测块按不相关处理；GNSS 基线块可使用完整协方差阵描述分量间的相关性。P 与角度导数采用一致的内部单位。',
          'matrices': {'Q · 观测协因数': entry(m.Q, obs, obs), 'P · 权阵': entry(m.P, obs, obs)}}]
     method = net.method
     if method == 'condition':
@@ -81,8 +81,8 @@ def network_steps(net, solution):
          'iterations': solution.iteration_trace,
          'matrices': {'ΔX · 坐标总改正数': entry(solution.corrections, params), 'X̂ · 最终待估坐标': entry([solution.points[p][a] for p, a in m.keys], params),
                       'v · 观测改正数': entry(r.v, obs), 'L̂ · 观测平差值': entry(r.adjusted, obs)}},
-        {'id': 'precision', 'title': '传播精度与检验', 'formula': 'σ̂₀ = √(vᵀ P v / f)，CovXX = σ² Qxx',
-         'description': '所选先验或后验基准用于中误差；统计诊断另以先验模型为参考。设计模式不估计后验单位权中误差。',
+        {'id': 'precision', 'title': '精度评定与统计检验', 'formula': 'σ̂₀ = √(vᵀ P v / f)，CovXX = σ² Qxx',
+         'description': '中误差按所选先验或后验精度基准计算；统计诊断使用先验模型。设计模式不估计后验单位权中误差。',
          'matrices': {'Qxx': entry(r.qxx, params, params), 'Qvv': entry(r.qvv, obs, obs), 'Q_L̂': entry(r.q_adjusted, obs, obs)},
          'metrics': {'n': m.stats['n'], 't': m.stats['t'], 'r': m.stats['r'], 'vᵀPv': r.weighted_sum, '所用 σ': r.precision_sigma, 'σ̂₀': r.posterior_sigma}}])
     return steps
@@ -103,7 +103,7 @@ def matrix_steps(method, values, result):
          'description': '未提供 L 或 X₀ 的项目不生成对应的绝对平差值。',
          'matrices': {k: entry(v) for k, v in {'v': r.v, 'x': r.x, 'L̂': r.adjusted, 'X̂': r.parameters}.items() if v is not None},
          'metrics': {'方程校核': r.equation_error, '限制校核': r.constraint_error, 'vᵀPv': r.weighted_sum}},
-        {'id': 'precision', 'title': '传播协因数与精度', 'formula': 'σ̂₀ = √(vᵀ P v / f)，Cov = σ² Q',
+        {'id': 'precision', 'title': '协因数传播与精度评定', 'formula': 'σ̂₀ = √(vᵀ P v / f)，Cov = σ² Q',
          'description': '自由度 f 为多余观测数；整体统计检验使用先验 σ₀，而非由本次残差估计的 σ̂₀。',
          'matrices': {k: entry(v) for k, v in {'Qxx': r.qxx, 'Qvv': r.qvv, 'Q_L̂': r.q_adjusted}.items() if v is not None},
          'metrics': {'n': r.n, 't = n − f': r.n-r.dof, 'r = f': r.dof, '所用 σ': r.precision_sigma, 'σ̂₀': r.posterior_sigma}}]

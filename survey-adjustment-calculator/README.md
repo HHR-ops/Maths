@@ -1,6 +1,6 @@
-# 测量平差工作台 v0.6.1 · React 桌面版
+# 测量平差工作台 v0.6.2 · React 桌面版
 
-从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.1) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6.1-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
+从 [GitHub Releases](https://github.com/HHR-ops/Maths/releases/tag/survey-adjustment-v0.6.2) 下载 Windows x64 压缩包，解压后双击 `测量平差工作台-v0.6.2-React.exe`。本地构建产物位于 `dist`，运行无需安装 Python 或 Node.js。
 此版本使用 React + TypeScript + Vite 重做界面，使用本机 WebView2 显示窗口，沿用 Python / NumPy 平差内核。
 运行环境为 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本，以及 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。环境齐全后可以离线使用。
 旧 Tk 界面源码保留供对照。Git 仓库存放源码与说明，EXE 和便携压缩包通过 Releases 分发。
@@ -8,6 +8,10 @@
 ![控制网工作台](docs/screenshots/workbench.png)
 
 跨电脑使用与项目迁移见 [便携版使用说明](docs/PORTABLE.md)。
+
+## v0.6.2 表述细节
+
+按“n，t，r参数与基准亏损”统一标题，润色理论章节、符号说明、检验提示与报告用语；参数计数使用“参数个数”，报告中的 n/t/r 与界面保持一致。离线手册由同一份内容生成。
 
 ## v0.6.1 外观细节
 
@@ -55,7 +59,7 @@
 ### 实时统计与矩阵
 
 - n：启用的标量观测分量数；GNSS 一条基线计 3，二维坐标观测计 2，高差、距离、水平角计 1。
-- u：未固定的坐标参数数；固定坐标已消去，不重复计入独立限制数 c。
+- u：未固定的坐标参数个数；固定坐标已消去，不重复计入独立限制条件个数 c。
 - c：独立精确限制的秩；t：限制消元后加权观测系数的秩；r=n−t。
 - 基准/几何亏损=u−c−t。亏损非零时需增加固定坐标、独立限制或有效观测，不任意给出唯一坐标解。
 - B、P、Q、N=BᵀPB 与法方程右端项自动生成。计算后增加 Qxx、Qvv、观测平差值协因数及参数协方差。
@@ -99,11 +103,11 @@ B.H:1 C.H:1 = 203.2
 | 模型 | 方程 | 自由度 f |
 | --- | --- | --- |
 | 条件平差 | A v + w = 0 | 条件方程数 k |
-| 附有参数的条件平差 | A v + B x + w = 0 | k − 参数数 u |
+| 附有参数的条件平差 | A v + B x + w = 0 | k − 参数个数 u |
 | 间接平差 | v = B x − l | n − u |
 | 附有限制条件的间接平差 | v = B x − l，C x + d = 0 | n − u + c |
 
-约定 v=平差值−观测值，目标 min vᵀPv。矩阵页统计统一显示 t=n−f，r=f；结果 JSON 中 t 为模型参数数，r 是条件方程数（条件法）或限制数（间接法），dof 为自由度，以字段约定为准。
+约定 v=平差值−观测值，目标 min vᵀPv。矩阵页统计统一显示 t=n−f，r=f；结果 JSON 中 t 为模型参数个数，r 是条件方程数（条件法）或限制数（间接法），dof 为自由度，以字段约定为准。
 
 每种模型均有可直接运行的例题。输入支持从 Excel 粘贴，空格/Tab/逗号分列，换行/分号分行，科学计数法及 # 注释。不接受表达式。
 输入的是权阵 P，不是协因数 Q。支持等权、对角权、完整正定权阵。

@@ -479,8 +479,8 @@ def network_report(net,solution):
            "GNSS 的坐标、基线及协方差必须在同一 XYZ 直角框架（可为地心框架）；不自动转换至 ENU。GNSS 椭圆仅为 XY 投影，长轴方向从 +X 向 +Y；m3D 为三维点位中误差。",
            "各观测块之间按不相关处理。",
            "标量统计："+"；".join(f"{k}={v}" for k,v in m.stats.items()),
-           "t=自由参数观测系数的秩；r=n−t；基准亏损=参数数−限制秩−t。GNSS 每条基线计 3 个标量观测。",
-           f"迭代次数：{solution.iterations}；所用 σ₀={r.precision_sigma}；vᵀPv={r.weighted_sum:.10g}",
+           "t=自由参数观测系数的秩；r=n−t；基准亏损=参数个数−限制秩−t。GNSS 每条基线计 3 个标量观测。",
+           f"迭代次数：{solution.iterations}；精度基准：{'先验' if r.precision_source == 'prior' else '后验'}；所用标准差尺度 σ={r.precision_sigma}；vᵀPv={r.weighted_sum:.10g}",
            "参数顺序："+", ".join(p+"."+a for p,a in m.keys),"观测顺序："+", ".join(m.labels)]
     if solution.design: lines.append("设计模式仅由网形与输入标准差预估精度，不把几何模拟值当作实测值，也不以零残差推断零误差。")
     elif r.posterior_sigma is not None: lines.append(f"后验单位权中误差：{r.posterior_sigma:.10g}（P 由实际标准差生成，参考先验 σ₀=1）")

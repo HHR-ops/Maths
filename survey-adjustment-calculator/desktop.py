@@ -327,7 +327,7 @@ def main():
         else:
             import webview
             webview.settings['ALLOW_DOWNLOADS'] = False
-            api._window = webview.create_window('测量平差工作台 v0.6.1 · React', url, js_api=api,
+            api._window = webview.create_window('测量平差工作台 v0.6.2 · React', url, js_api=api,
                                                width=1440, height=960, min_size=(1060, 740),
                                                background_color='#f8fafc')
             if args.ui_self_test:

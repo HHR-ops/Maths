@@ -101,7 +101,7 @@ def diagnostic_report(data):
     if not data['available']: lines.append(data['reason'])
     else:
         g = data['global_test']
-        lines.append(f"整体检验 T={g['statistic']:.8g}，f={g['dof']}，接受区间=[{g['lower']:.8g}, {g['upper']:.8g}]，双侧 p={g['p_value']:.8g}，{g['status']}")
+        lines.append(f"整体检验 T={g['statistic']:.8g}，f={g['dof']}，未拒绝域=[{g['lower']:.8g}, {g['upper']:.8g}]，双侧 p={g['p_value']:.8g}，{g['status']}")
         lines.append('疑似异常观测：'+(', '.join(data['flagged_observations']) or '未检出'))
         for row in data['rows']:
             lines.append(f"{row['label']}: v={row['display_residual']:.8g} {row['unit']}, z={row['standardized']}, p_Holm={row['p_adjusted']}, 疑似异常={row['rejected']}")
