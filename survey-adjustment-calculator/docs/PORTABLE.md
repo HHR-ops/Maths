@@ -6,7 +6,7 @@
 
 目标电脑需要 64 位 Windows 10 / 11、.NET Framework 4.6.2 或更高版本、Microsoft Edge WebView2 Runtime。WebView2 缺失时，可从 [微软官方下载页](https://developer.microsoft.com/microsoft-edge/webview2/) 安装；需要全离线部署时选择 x64 Evergreen Standalone Installer，并预先带到目标电脑上安装。
 
-程序 EXE 已内嵌前端、Python 解释器和计算内核，源码、虚拟环境与 node_modules 不需要复制。便携包同时附带 README、使用说明和第三方许可，分发时建议一并保留。
+程序 EXE 已内嵌前端、Python 解释器和计算内核，源码、虚拟环境与 node_modules 不需要复制。便携包同时附带 README、使用说明、原创代码的 MIT 许可证和第三方许可；分发时须保留相应版权及许可声明。
 
 ## 迁移已有项目
 

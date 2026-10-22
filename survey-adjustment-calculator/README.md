@@ -153,3 +153,9 @@ React 修改后执行 `npm run build`，重启桌面程序即可。浏览器联�
 - [GNU Gama — Network adjustment with gama-local](https://www.gnu.org/s/gama/manual/html_node/Network-adjustment-with-gama_002dlocal.html)
 
 求解采用 Cholesky 白化、SVD 与零空间消元；法方程矩阵供复核。参考资料的 A/B 命名与残差符号可能不同，以本程序的方程为准。
+
+## 许可证与反馈
+
+本项目原创代码采用 [MIT 许可证](LICENSE)，Copyright (c) 2026 HHR-ops。允许使用、修改、分发及商业使用，分发时须保留版权和许可声明。第三方依赖与参考界面代码遵循各自许可证，详见 [第三方许可说明](THIRD_PARTY_NOTICES.md)。
+
+问题和建议可提交至 [Maths Issues](https://github.com/HHR-ops/Maths/issues)。报告计算问题时，请附程序版本、复现步骤、预期结果及可公开的最小示例；运行环境和当前验证范围见 [便携版说明](docs/PORTABLE.md)。

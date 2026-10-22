@@ -33,4 +33,5 @@ if ($LASTEXITCODE -ne 0) { throw '理论手册生成失败。' }
 if ($LASTEXITCODE -ne 0) { throw 'EXE 打包失败。' }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.md') -Destination (Join-Path $PSScriptRoot 'dist\README.md') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'THIRD_PARTY_NOTICES.md') -Destination (Join-Path $PSScriptRoot 'dist\THIRD_PARTY_NOTICES.md') -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'LICENSE') -Destination (Join-Path $PSScriptRoot 'dist\LICENSE') -Force
 Write-Host '已生成 dist\测量平差工作台-v0.6.3-React.exe'
